@@ -154,27 +154,28 @@ const Cart = () => {
                                         <span style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.02em' }}>${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
                                     </div>
 
-                                    <button style={{
-                                        width: '100%',
-                                        height: '64px',
-                                        background: 'white',
-                                        color: 'black',
-                                        borderRadius: '20px',
-                                        fontSize: '16px',
-                                        fontWeight: 900,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        justifyContent: 'center',
-                                        gap: '12px',
-                                        border: 'none',
-                                        cursor: 'pointer',
-                                        transition: 'transform 0.2s'
-                                    }}
+                                    <Link
+                                        to="/checkout"
+                                        style={{
+                                            width: '100%',
+                                            height: '64px',
+                                            background: 'white',
+                                            color: 'black',
+                                            borderRadius: '20px',
+                                            fontSize: '16px',
+                                            fontWeight: 900,
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            gap: '12px',
+                                            textDecoration: 'none',
+                                            transition: 'transform 0.2s'
+                                        }}
                                         onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
                                         onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                                     >
                                         Checkout <ArrowRight size={20} />
-                                    </button>
+                                    </Link>
 
                                     <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
                                         <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%' }}></div>
