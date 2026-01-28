@@ -127,16 +127,10 @@ const Admin = () => {
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#fafafa' }}>
             {/* Admin Sidebar */}
-            <div style={{
-                width: '220px',
-                padding: '24px',
-                borderRight: '1px solid #f0f0f0',
-                background: 'white',
-                display: 'flex',
-                flexDirection: 'column'
-            }}>
-                <AdminSidebar currentView={currentView} onViewChange={handleViewChange} />
-            </div>
+            <AdminSidebar currentView={currentView} onViewChange={handleViewChange} />
+            
+            {/* Spacer for fixed sidebar */}
+            <div style={{ width: '220px', flexShrink: 0 }} />
 
             {/* Main Content */}
             <div style={{ flex: 1, padding: '40px', overflowY: 'auto' }}>
