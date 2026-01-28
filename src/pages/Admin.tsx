@@ -5,6 +5,8 @@ import AdminSidebar, { type AdminView } from '../components/admin/AdminSidebar';
 import DashboardOverview from '../components/admin/DashboardOverview';
 import ProductList from '../components/admin/ProductList';
 import ProductEditor from '../components/admin/ProductEditor';
+import OrderManager from '../components/admin/OrderManager';
+import CategoryManager from '../components/admin/CategoryManager';
 
 interface Variant {
     id?: string;
@@ -151,6 +153,10 @@ const Admin = () => {
                         onAddProduct={() => handleOpenEditor()}
                         onRefresh={fetchProducts}
                     />
+                ) : currentView === 'orders' ? (
+                    <OrderManager />
+                ) : currentView === 'categories' ? (
+                    <CategoryManager />
                 ) : currentView === 'analytics' ? (
                     <div style={{ textAlign: 'center', padding: '100px' }}>
                         <h2 style={{ fontSize: '24px', fontWeight: 800, marginBottom: '12px' }}>Analytics</h2>

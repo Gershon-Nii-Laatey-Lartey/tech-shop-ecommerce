@@ -1,10 +1,10 @@
-import { LayoutDashboard, Package, Settings, BarChart3, ChevronRight, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Package, Settings, BarChart3, ChevronRight, LogOut, User, ShoppingCart, FolderOpen } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 
-export type AdminView = 'dashboard' | 'inventory' | 'analytics' | 'settings';
+export type AdminView = 'dashboard' | 'inventory' | 'orders' | 'categories' | 'analytics' | 'settings';
 
 interface AdminSidebarProps {
     currentView: AdminView;
@@ -14,6 +14,8 @@ interface AdminSidebarProps {
 const menuItems: { id: AdminView; label: string; icon: React.ReactNode }[] = [
     { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
     { id: 'inventory', label: 'Inventory', icon: <Package size={18} /> },
+    { id: 'orders', label: 'Orders', icon: <ShoppingCart size={18} /> },
+    { id: 'categories', label: 'Categories', icon: <FolderOpen size={18} /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 size={18} /> },
     { id: 'settings', label: 'Settings', icon: <Settings size={18} /> },
 ];
