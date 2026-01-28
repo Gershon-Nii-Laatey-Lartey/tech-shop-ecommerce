@@ -1,0 +1,111 @@
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+
+.main-content {
+  flex: 1;
+}
+
+.hero-grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  gap: 60px;
+}
+
+.hero-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.hero-sidebar-item {
+  font-size: 18px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.hero-sidebar-item.active {
+  color: #ffffff;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hero-sidebar-item.active::before {
+  content: '→';
+}
+
+.hero-title {
+  font-size: 80px;
+  font-weight: 800;
+  line-height: 1;
+  margin-bottom: 40px;
+  letter-spacing: -2px;
+}
+
+.hero-search-container {
+  max-width: 600px;
+  position: relative;
+  margin-bottom: 60px;
+}
+
+.hero-cards-scroll {
+  display: flex;
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+
+.hero-card {
+  background: #ffffff;
+  color: #1a1a1a;
+  padding: 30px;
+  border-radius: 20px;
+  min-width: 200px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 140px;
+  cursor: pointer;
+}
+
+.hero-card.ghost {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.hero-card h4 {
+  font-size: 18px;
+  font-weight: 700;
+  width: 100px;
+}
+
+.arrow-btn {
+  width: 50px;
+  height: 50px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 1024px) {
+  .hero-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-sidebar {
+    display: none;
+  }
+
+  .hero-title {
+    font-size: 48px;
+  }
+}
