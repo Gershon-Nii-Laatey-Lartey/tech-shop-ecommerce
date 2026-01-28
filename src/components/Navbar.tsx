@@ -1,4 +1,4 @@
-import { ShoppingBag, User as UserIcon } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';

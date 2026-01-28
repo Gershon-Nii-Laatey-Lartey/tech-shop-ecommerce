@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import {
     Trash2,
     Edit2,
@@ -7,13 +7,9 @@ import {
     Plus,
     X,
     Save,
-    Eye,
     Check,
     ChevronLeft,
-    Box,
-    Tag,
-    Layers,
-    Type
+    Box
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
