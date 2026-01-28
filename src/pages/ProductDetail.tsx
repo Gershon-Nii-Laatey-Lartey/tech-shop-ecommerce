@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Star, Heart, Plus, ChevronLeft, ChevronRight, Check, ShoppingBag, MessageSquare, Menu, Share2 } from 'lucide-react';
+import { Star, Heart, Plus, ChevronLeft, ChevronRight, Check, ShoppingBag, Share2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from '../components/Sidebar';
 import { supabase } from '../supabaseClient';

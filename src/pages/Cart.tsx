@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, ChevronLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';

@@ -1,4 +1,4 @@
-import React from 'react';
+
 import Navbar from './Navbar';
 import { Mic, SlidersHorizontal, ArrowLeft, ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
 

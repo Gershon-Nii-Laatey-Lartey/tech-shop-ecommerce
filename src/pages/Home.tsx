@@ -21,7 +21,7 @@ const Home = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('products')
                 .select('*')
                 .limit(6); // Show top 6 on home

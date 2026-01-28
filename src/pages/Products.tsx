@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { Search, Filter, Grid, List as ListIcon } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import Sidebar from '../components/Sidebar';
@@ -16,7 +16,6 @@ interface Product {
 }
 
 const Products = () => {
-    const navigate = useNavigate();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
@@ -24,7 +23,7 @@ const Products = () => {
     useEffect(() => {
         const fetchProducts = async () => {
             setLoading(true);
-            const { data, error } = await supabase
+            const { data } = await supabase
                 .from('products')
                 .select('*');
 
