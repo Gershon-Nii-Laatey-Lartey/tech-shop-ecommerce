@@ -87,11 +87,16 @@ img {
   position: sticky;
   top: 85px;
   height: calc(100vh - 110px);
-  /* Adjusted for bottom buffer */
   display: flex;
   flex-direction: column;
   padding: 0;
   z-index: 1000;
+}
+
+.admin-sidebar {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
 .profile-card {
