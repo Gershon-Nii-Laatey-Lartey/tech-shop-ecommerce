@@ -5,6 +5,8 @@ import { supabase } from '../supabaseClient';
 interface Profile {
     id: string;
     email: string;
+    full_name?: string;
+    avatar_url?: string;
     role: 'admin' | 'user';
 }
 
@@ -75,8 +77,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signOut = async () => {
         await supabase.auth.signOut();
-        setProfile(null);
         setUser(null);
+        setProfile(null);
     };
 
     const refreshProfile = async () => {

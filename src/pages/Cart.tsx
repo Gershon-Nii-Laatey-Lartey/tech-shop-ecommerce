@@ -1,203 +1,386 @@
-
+import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Plus, Minus, ArrowRight, ShoppingBag, ChevronLeft } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ChevronLeft, ShieldCheck, Truck } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import Sidebar from '../components/Sidebar';
 
 const Cart = () => {
-    const { items, updateQuantity, removeFromCart, total, count } = useCart();
+    const { items, total, removeFromCart, updateQuantity } = useCart();
+    const navigate = useNavigate();
 
-    const shipping = total > 500 ? 0 : 25;
-    const tax = total * 0.08;
+    const shipping = 0; // Free shipping for now
+    const tax = total * 0.08; // 8% tax example
     const grandTotal = total + shipping + tax;
 
     return (
         <div className="layout-with-sidebar">
             <Sidebar />
 
-            <div style={{ flex: 1, padding: '40px' }}>
-                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '48px' }}>
-                        <div>
-                            <Link to="/products" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#aaa', fontWeight: 700, fontSize: '12px', textDecoration: 'none', marginBottom: '16px', textTransform: 'uppercase' }}>
-                                <ChevronLeft size={16} /> Continue Shopping
-                            </Link>
-                            <h1 style={{ fontSize: '42px', fontWeight: 900, letterSpacing: '-0.04em' }}>Your Basket</h1>
-                            <p style={{ color: '#aaa', fontWeight: 600 }}>{count} items ready for checkout</p>
-                        </div>
-                    </div>
+            <div className="cart-main-content" style={{
+                flex: 1,
+                background: '#fff',
+                minHeight: '100vh',
+                padding: '40px',
+                maxWidth: '1200px',
+                margin: '0 auto',
+                width: '100%'
+            }}>
 
-                    {items.length === 0 ? (
-                        <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
+                {/* Header */}
+                <div className="cart-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px' }}>
+                    <div>
+                        <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.04em' }}>
+                            Your Shopping Bag
+                        </h1>
+                        <p style={{ color: '#6B7280', marginTop: '4px', fontWeight: 500 }}>
+                            {items.length === 0 ? 'Your cart is empty' : `You have ${items.length} unique items in your bag`}
+                        </p>
+                    </div>
+                    {items.length > 0 && (
+                        <button
+                            onClick={() => navigate('/')}
                             style={{
-                                textAlign: 'center',
-                                padding: '100px 0',
-                                background: '#f9f9fb',
-                                borderRadius: '32px',
-                                border: '2px dashed #eee'
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: '#5544ff',
+                                fontWeight: 700,
+                                fontSize: '14px'
                             }}
                         >
-                            <div style={{ width: '80px', height: '80px', background: 'white', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#ccc' }}>
-                                <ShoppingBag size={40} />
-                            </div>
-                            <h2 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '12px' }}>Your basket is empty</h2>
-                            <p style={{ color: '#aaa', fontWeight: 600, marginBottom: '32px' }}>Looks like you haven't added anything yet.</p>
-                            <Link to="/products" style={{
-                                padding: '16px 32px',
-                                background: 'black',
-                                color: 'white',
-                                borderRadius: '16px',
-                                fontWeight: 800,
-                                textDecoration: 'none',
-                                display: 'inline-block'
-                            }}>
-                                Browse Products
-                            </Link>
-                        </motion.div>
-                    ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '48px', alignItems: 'start' }}>
-                            {/* Items List */}
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                <AnimatePresence>
-                                    {items.map((item) => (
-                                        <motion.div
-                                            key={item.id}
-                                            layout
-                                            initial={{ opacity: 0, x: -20 }}
-                                            animate={{ opacity: 1, x: 0 }}
-                                            exit={{ opacity: 0, x: 20 }}
-                                            style={{
-                                                display: 'flex',
-                                                gap: '24px',
-                                                padding: '24px',
-                                                background: 'white',
-                                                borderRadius: '24px',
-                                                border: '1px solid #f0f0f0',
-                                                alignItems: 'center'
-                                            }}
-                                        >
-                                            <div style={{ width: '100px', height: '100px', background: '#f5f5f7', borderRadius: '16px', padding: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                <img src={item.image} style={{ width: '100%', height: '100%', objectFit: 'contain', mixBlendMode: 'multiply' }} />
-                                            </div>
+                            <ChevronLeft size={18} />
+                            Continue Shopping
+                        </button>
+                    )}
+                </div>
 
-                                            <div style={{ flex: 1 }}>
-                                                <h3 style={{ fontSize: '18px', fontWeight: 900, marginBottom: '4px' }}>{item.name}</h3>
-                                                <p style={{ fontSize: '13px', color: '#aaa', fontWeight: 700, textTransform: 'uppercase' }}>{item.variant_id ? 'Custom Spec' : 'Standard Spec'}</p>
+                {items.length === 0 ? (
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="empty-cart-banner"
+                        style={{
+                            textAlign: 'center',
+                            padding: '80px 40px',
+                            background: '#F9FAFB',
+                            borderRadius: '24px',
+                            border: '2px dashed #E2E8F0',
+                            maxWidth: '600px',
+                            margin: '0 auto'
+                        }}
+                    >
+                        <div style={{
+                            width: '80px',
+                            height: '80px',
+                            background: '#fff',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            margin: '0 auto 24px',
+                            boxShadow: '0 10px 25px -5px rgba(0,0,0,0.05)'
+                        }}>
+                            <ShoppingCart size={32} color="#D1D5DB" />
+                        </div>
+                        <h2 style={{ fontSize: '20px', fontWeight: 700, color: '#111827', marginBottom: '8px' }}>Your bag is empty</h2>
+                        <p style={{ color: '#6B7280', marginBottom: '32px' }}>Looks like you haven't added anything to your bag yet.</p>
+                        <button
+                            onClick={() => navigate('/')}
+                            style={{
+                                background: '#5544ff',
+                                color: '#fff',
+                                padding: '14px 32px',
+                                borderRadius: '12px',
+                                border: 'none',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 14px rgba(85, 68, 255, 0.2)'
+                            }}
+                        >
+                            Start Shopping
+                        </button>
+                    </motion.div>
+                ) : (
+                    <div className="cart-grid" style={{
+                        display: 'grid',
+                        gridTemplateColumns: '2fr 1fr',
+                        gap: '48px',
+                        alignItems: 'start'
+                    }}>
 
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginTop: '16px' }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', background: '#f5f5f7', borderRadius: '12px', padding: '4px' }}>
-                                                        <button
-                                                            onClick={() => updateQuantity(item.id, -1)}
-                                                            style={{ width: '32px', height: '32px', borderRadius: '10px', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                        >
-                                                            <Minus size={14} />
-                                                        </button>
-                                                        <span style={{ width: '32px', textAlign: 'center', fontSize: '14px', fontWeight: 800 }}>{item.quantity}</span>
-                                                        <button
-                                                            onClick={() => updateQuantity(item.id, 1)}
-                                                            style={{ width: '32px', height: '32px', borderRadius: '10px', border: 'none', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                                        >
-                                                            <Plus size={14} />
-                                                        </button>
-                                                    </div>
-                                                    <button
-                                                        onClick={() => removeFromCart(item.id)}
-                                                        style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 800 }}
-                                                    >
-                                                        <Trash2 size={16} /> REMOVE
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            <div style={{ textAlign: 'right' }}>
-                                                <p style={{ fontSize: '20px', fontWeight: 900 }}>${(item.price * item.quantity).toLocaleString()}</p>
-                                                <p style={{ fontSize: '12px', color: '#aaa', fontWeight: 600 }}>${item.price.toLocaleString()} ea.</p>
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </AnimatePresence>
-                            </div>
-
-                            {/* Summary Card */}
-                            <div style={{ position: 'sticky', top: '40px' }}>
-                                <div style={{
-                                    background: 'black',
-                                    color: 'white',
-                                    borderRadius: '32px',
-                                    padding: '40px',
-                                    boxShadow: '0 20px 40px rgba(0,0,0,0.1)'
-                                }}>
-                                    <h3 style={{ fontSize: '24px', fontWeight: 900, marginBottom: '32px' }}>Order Summary</h3>
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginBottom: '32px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontWeight: 700, fontSize: '14px' }}>
-                                            <span>Subtotal</span>
-                                            <span style={{ color: 'white' }}>${total.toLocaleString()}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontWeight: 700, fontSize: '14px' }}>
-                                            <span>Shipping</span>
-                                            <span style={{ color: 'white' }}>{shipping === 0 ? 'FREE' : `$${shipping}`}</span>
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', color: '#888', fontWeight: 700, fontSize: '14px' }}>
-                                            <span>Estimated Tax (8%)</span>
-                                            <span style={{ color: 'white' }}>${tax.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                        </div>
-                                    </div>
-
-                                    <div style={{ height: '1px', background: 'rgba(255,255,255,0.1)', marginBottom: '32px' }}></div>
-
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-                                        <span style={{ fontSize: '16px', fontWeight: 700, color: '#888' }}>Total Amount</span>
-                                        <span style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.02em' }}>${grandTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                    </div>
-
-                                    <Link
-                                        to="/checkout"
+                        {/* Items List */}
+                        <div className="items-column" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                            <AnimatePresence mode='popLayout'>
+                                {items.map((item) => (
+                                    <motion.div
+                                        key={item.id}
+                                        layout
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        exit={{ opacity: 0, scale: 0.95 }}
+                                        className="cart-item-row"
                                         style={{
-                                            width: '100%',
-                                            height: '64px',
-                                            background: 'white',
-                                            color: 'black',
-                                            borderRadius: '20px',
-                                            fontSize: '16px',
-                                            fontWeight: 900,
+                                            display: 'flex',
+                                            gap: '24px',
+                                            paddingBottom: '32px',
+                                            borderBottom: '1px solid #F1F5F9'
+                                        }}
+                                    >
+                                        <div className="item-image-box" style={{
+                                            width: '120px',
+                                            height: '140px',
+                                            background: '#F8FAFC',
+                                            border: '1px solid #F1F5F9',
+                                            borderRadius: '24px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            gap: '12px',
-                                            textDecoration: 'none',
-                                            transition: 'transform 0.2s'
-                                        }}
-                                        onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.02)'}
-                                        onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                                    >
-                                        Checkout <ArrowRight size={20} />
-                                    </Link>
+                                            padding: '20px',
+                                            flexShrink: 0
+                                        }}>
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                style={{ width: '100%', height: '100%', objectFit: 'contain' }}
+                                            />
+                                        </div>
 
-                                    <div style={{ marginTop: '24px', display: 'flex', alignItems: 'center', gap: '12px', justifyContent: 'center' }}>
-                                        <div style={{ width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%' }}></div>
-                                        <p style={{ fontSize: '11px', fontWeight: 800, color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Secure Checkout Guaranteed</p>
+                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                            <div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '4px' }}>
+                                                    <Link to={`/product/${item.product_id}`} style={{ textDecoration: 'none', flex: 1 }}>
+                                                        <h3 className="item-name" style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: 0, paddingRight: '12px' }}>{item.name}</h3>
+                                                    </Link>
+                                                    <p className="item-total-price" style={{ fontSize: '18px', fontWeight: 900, color: '#0F172A', margin: 0 }}>
+                                                        GH₵ {(item.price * item.quantity).toFixed(2)}
+                                                    </p>
+                                                </div>
+                                                <p className="item-unit-price" style={{ fontSize: '14px', color: '#64748B', fontWeight: 600 }}>GH₵ {item.price.toFixed(2)} unit price</p>
+                                            </div>
+
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                                <div className="qty-picker" style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    background: '#F1F5F9',
+                                                    borderRadius: '12px',
+                                                    padding: '4px',
+                                                    border: '1px solid #E2E8F0'
+                                                }}>
+                                                    <button
+                                                        onClick={() => updateQuantity(item.id, -1)}
+                                                        style={{ width: '36px', height: '36px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}
+                                                    >
+                                                        <Minus size={14} />
+                                                    </button>
+                                                    <span style={{ width: '30px', textAlign: 'center', fontWeight: 800, fontSize: '15px' }}>{item.quantity}</span>
+                                                    <button
+                                                        onClick={() => updateQuantity(item.id, 1)}
+                                                        style={{ width: '36px', height: '36px', border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#64748B' }}
+                                                    >
+                                                        <Plus size={14} />
+                                                    </button>
+                                                </div>
+
+                                                <button
+                                                    onClick={() => removeFromCart(item.id)}
+                                                    className="remove-btn"
+                                                    style={{
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        gap: '6px',
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: '#EF4444',
+                                                        fontSize: '13px',
+                                                        fontWeight: 800,
+                                                        cursor: 'pointer',
+                                                        padding: '8px'
+                                                    }}
+                                                >
+                                                    <Trash2 size={16} />
+                                                    <span>Remove</span>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </motion.div>
+                                ))}
+                            </AnimatePresence>
+                        </div>
+
+                        {/* Order Summary */}
+                        <div className="summary-column" style={{ position: 'sticky', top: '40px' }}>
+                            <div className="summary-card" style={{
+                                background: '#ffffff',
+                                borderRadius: '32px',
+                                padding: '32px',
+                                border: '1px solid #F1F5F9',
+                                boxShadow: '0 4px 30px rgba(0,0,0,0.03)'
+                            }}>
+                                <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0F172A', marginBottom: '24px', letterSpacing: '-0.02em' }}>Order Summary</h2>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748B', fontWeight: 600 }}>Subtotal</span>
+                                        <span style={{ fontWeight: 800, color: '#0F172A' }}>GH₵ {total.toFixed(2)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748B', fontWeight: 600 }}>Estimated Tax</span>
+                                        <span style={{ fontWeight: 800, color: '#0F172A' }}>GH₵ {tax.toFixed(2)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                        <span style={{ color: '#64748B', fontWeight: 600 }}>Estimated Shipping</span>
+                                        <span style={{ fontWeight: 800, color: '#10B981' }}>FREE</span>
                                     </div>
                                 </div>
 
                                 <div style={{
-                                    marginTop: '24px',
-                                    padding: '24px',
-                                    background: '#f9f9fb',
-                                    borderRadius: '24px',
-                                    border: '1px solid #f0f0f0'
+                                    height: '1px',
+                                    background: '#F1F5F9',
+                                    margin: '0 0 24px 0'
+                                }} />
+
+                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '32px' }}>
+                                    <span style={{ fontSize: '18px', fontWeight: 900, color: '#0F172A' }}>Total</span>
+                                    <span style={{ fontSize: '24px', fontWeight: 900, color: '#5544ff', letterSpacing: '-0.03em' }}>GH₵ {grandTotal.toFixed(2)}</span>
+                                </div>
+
+                                <button
+                                    onClick={() => navigate('/checkout')}
+                                    style={{
+                                        width: '100%',
+                                        background: '#0F172A',
+                                        color: '#fff',
+                                        padding: '20px',
+                                        borderRadius: '20px',
+                                        border: 'none',
+                                        fontSize: '16px',
+                                        fontWeight: 800,
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '12px',
+                                        transition: 'all 0.2s',
+                                        boxShadow: '0 10px 20px rgba(0,0,0,0.1)'
+                                    }}
+                                >
+                                    Checkout Now
+                                    <ArrowRight size={20} strokeWidth={2.5} />
+                                </button>
+
+                                <p style={{
+                                    fontSize: '12px',
+                                    color: '#94A3B8',
+                                    marginTop: '20px',
+                                    textAlign: 'center',
+                                    fontWeight: 600
                                 }}>
-                                    <p style={{ fontSize: '13px', fontWeight: 700, color: '#666', lineHeight: 1.5 }}>
-                                        <span style={{ color: 'black', fontWeight: 900 }}>Free shipping</span> on orders over $500. Add more items to qualify.
-                                    </p>
+                                    Calculated at next step
+                                </p>
+                            </div>
+
+                            {/* Trust Icons */}
+                            <div className="cart-trust-badges" style={{ marginTop: '24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '16px', padding: '0 8px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ background: '#F0FDF4', padding: '8px', borderRadius: '10px' }}>
+                                        <ShieldCheck size={16} color="#10B981" />
+                                    </div>
+                                    <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 700 }}>Secure</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                    <div style={{ background: '#F0FDF4', padding: '8px', borderRadius: '10px' }}>
+                                        <Truck size={16} color="#10B981" />
+                                    </div>
+                                    <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 700 }}>Fast Delivery</span>
                                 </div>
                             </div>
                         </div>
-                    )}
-                </div>
+
+                    </div>
+                )}
+
+                <style>{`
+                                .cart-trust-badges {
+                                    grid-template-columns: 1fr 1fr !important;
+                                }
+                            }
+
+                            .cart-main-content {
+                                flex: 1;
+                                background: #fff;
+                                min-height: 100vh;
+                                padding: 40px;
+                            }
+                            .cart-container {
+                                max-width: 1200px;
+                                margin: 0 auto;
+                                width: 100%;
+                            }
+
+                            @media (max-width: 900px) {
+                                .cart-main-content {
+                                    padding: 24px 16px !important;
+                                }
+                            }
+
+                            @media (max-width: 768px) {
+                                .cart-header {
+                                flex-direction: column;
+                                align-items: flex-start !important;
+                                gap: 16px;
+                                margin-bottom: 32px !important;
+                            }
+                            .cart-grid {
+                                grid-template-columns: 1fr !important;
+                                gap: 32px !important;
+                            }
+                            .cart-item-row {
+                                gap: 16px !important;
+                                position: relative;
+                            }
+                            .item-image-box {
+                                width: 100px !important;
+                                height: 120px !important;
+                                border-radius: 20px !important;
+                            }
+                            .item-name {
+                                font-size: 16px !important;
+                                line-height: 1.3;
+                            }
+                            .item-total-price {
+                                font-size: 16px !important;
+                            }
+                            .item-unit-price {
+                                font-size: 12px !important;
+                            }
+                            .qty-picker {
+                                height: 40px;
+                            }
+                            .remove-btn span {
+                                display: none;
+                            }
+                            .remove-btn {
+                                padding: 8px !important;
+                                background: #FEF2F2 !important;
+                                border-radius: 10px !important;
+                            }
+                            .summary-column {
+                                position: static !important;
+                            }
+                            .summary-card {
+                                padding: 24px !important;
+                                border-radius: 24px !important;
+                            }
+                            .cart-trust-badges {
+                                grid-template-columns: 1fr 1fr !important;
+                            }
+                        }
+                    `}</style>
+
             </div>
         </div>
     );

@@ -1,132 +1,81 @@
-import { useState } from 'react';
-import { ShoppingBag, Search, Package } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useCart } from '../contexts/CartContext';
+import { Link } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import SearchModal from './SearchModal';
+import { useCart } from '../contexts/CartContext';
+import { ShoppingBag, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const Navbar = () => {
-  const { count } = useCart();
-  const { user, isAdmin } = useAuth();
-  const navigate = useNavigate();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const { user } = useAuth();
+  const { items } = useCart();
+
+  const itemCount = items.reduce((acc, item) => acc + item.quantity, 0);
 
   return (
-    <>
-      <div className="floating-header" style={{ height: '60px', border: '1px solid rgba(255,255,255,0.1)' }}>
-        <Link to="/" style={{ fontSize: '26px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '10px', letterSpacing: '-0.04em' }}>
-          <div style={{ position: 'relative', width: '32px', height: '32px' }}>
-            <div style={{ position: 'absolute', width: '16px', height: '16px', background: 'white', borderRadius: '50% 50% 0 50%' }}></div>
-            <div style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', background: 'white', borderRadius: '50% 0 50% 50%', opacity: 0.6 }}></div>
-            <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', border: '2px solid var(--primary-color)' }}></div>
-          </div>
-          people
-        </Link>
-
-        <div style={{ display: 'flex', gap: '32px', fontSize: '12px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', marginLeft: 'auto', marginRight: '48px' }} className="desktop-only">
-          <Link to="/" style={{ transition: 'all 0.2s' }}>Home</Link>
-          <Link to="/products" style={{ display: 'flex', alignItems: 'center', gap: '8px', transition: 'all 0.2s' }}>
-            Products <span className="badge" style={{ fontSize: '8px', padding: '3px 7px', borderRadius: '8px', background: '#ff4444' }}>New</span>
-          </Link>
-          {user && (
-            <Link to="/orders" style={{ display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
-              <Package size={14} /> Orders
-            </Link>
-          )}
-          {isAdmin && (
-            <Link to="/admin" style={{ color: '#4ade80', transition: 'all 0.2s' }}>Dashboard</Link>
-          )}
-          <Link to="/" style={{ opacity: 0.6, transition: 'all 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.opacity = '1'} onMouseLeave={(e) => e.currentTarget.style.opacity = '0.6'}>Support</Link>
+    <div className="floating-header">
+      <Link to="/" style={{ fontSize: '24px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '12px', letterSpacing: '-0.04em', textDecoration: 'none', color: 'white' }}>
+        <div style={{ position: 'relative', width: '32px', height: '32px' }}>
+          <div style={{ position: 'absolute', width: '16px', height: '16px', background: 'white', borderRadius: '50% 50% 0 50%' }}></div>
+          <div style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', background: 'white', borderRadius: '50% 0 50% 50%', opacity: 0.6 }}></div>
+          <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', border: '2px solid var(--primary-color)' }}></div>
         </div>
+        <span>people</span>
+      </Link>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          {/* Search Button */}
-          <button
-            onClick={() => setIsSearchOpen(true)}
-            style={{
-              background: 'rgba(255,255,255,0.1)',
-              color: 'white',
-              width: '44px',
-              height: '44px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              border: '1px solid rgba(255,255,255,0.1)',
-              cursor: 'pointer',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.2)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-          >
-            <Search size={18} />
-          </button>
+      <div style={{ display: 'flex', gap: '32px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginLeft: 'auto', alignItems: 'center' }}>
+        <Link to="/" className="hide-mobile" style={{ transition: 'all 0.2s', color: 'white', opacity: 0.7 }}>Home</Link>
+        <Link to="/orders" className="hide-mobile" style={{ transition: 'all 0.2s', color: 'white', opacity: 0.7 }}>Orders</Link>
 
-          <Link to="/cart">
-            <button style={{
-              background: 'white',
-              color: 'black',
-              width: '44px',
-              height: '44px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 20px rgba(0,0,0,0.1)',
-              position: 'relative',
-              border: 'none',
-              cursor: 'pointer'
-            }}>
-              <ShoppingBag size={20} />
-              {count > 0 && (
-                <div style={{
-                  position: 'absolute',
-                  top: '-5px',
-                  right: '-5px',
-                  background: '#ff4444',
-                  color: 'white',
-                  fontSize: '10px',
-                  fontWeight: 900,
-                  width: '18px',
-                  height: '18px',
-                  borderRadius: '50%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  border: '2px solid white'
-                }}>
-                  {count}
-                </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+          <Link to="/cart" style={{ position: 'relative', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ShoppingBag size={22} strokeWidth={2.5} />
+            <AnimatePresence mode="popLayout">
+              {itemCount > 0 && (
+                <motion.span
+                  key="cart-badge"
+                  initial={{ scale: 0, opacity: 0, y: 5 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0, opacity: 0, y: 5 }}
+                  transition={{ type: 'spring', damping: 15, stiffness: 400 }}
+                  style={{
+                    position: 'absolute',
+                    top: '-7px',
+                    right: '-10px',
+                    background: 'linear-gradient(135deg, #ff3b30 0%, #ff2d55 100%)',
+                    color: 'white',
+                    fontSize: '10px',
+                    fontWeight: 900,
+                    minWidth: '18px',
+                    height: '18px',
+                    borderRadius: '10px',
+                    padding: '0 4px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    boxShadow: '0 4px 12px rgba(255, 59, 48, 0.3)',
+                    pointerEvents: 'none'
+                  }}
+                >
+                  <motion.span
+                    key={itemCount}
+                    initial={{ y: 5, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    transition={{ type: 'spring', damping: 12, stiffness: 300 }}
+                  >
+                    {itemCount}
+                  </motion.span>
+                </motion.span>
               )}
-            </button>
+            </AnimatePresence>
           </Link>
 
-          {user ? (
-            <div
-              onClick={() => navigate('/profile')}
-              style={{
-                width: '44px',
-                height: '44px',
-                borderRadius: '50%',
-                background: 'rgba(255,255,255,0.1)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                border: '2px solid rgba(255,255,255,0.2)',
-                cursor: 'pointer',
-                overflow: 'hidden'
-              }}
-            >
-              <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.email}`} alt="Avatar" />
-            </div>
-          ) : (
+          {!user ? (
             <Link to="/auth" style={{
-              height: '44px',
-              padding: '0 24px',
+              height: '40px',
+              padding: '0 20px',
               background: 'white',
               color: 'black',
-              borderRadius: '22px',
-              fontSize: '13px',
+              borderRadius: '20px',
+              fontSize: '12px',
               fontWeight: 800,
               display: 'flex',
               alignItems: 'center',
@@ -135,13 +84,17 @@ const Navbar = () => {
             }}>
               LOGIN
             </Link>
+          ) : (
+            <Link to="/profile" style={{ color: 'white' }}>
+              <User size={22} strokeWidth={2.5} />
+            </Link>
           )}
         </div>
       </div>
-
-      <SearchModal isOpen={isSearchOpen} onClose={() => setIsSearchOpen(false)} />
-    </>
+    </div>
   );
 };
 
 export default Navbar;
+
+

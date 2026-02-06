@@ -1,6 +1,7 @@
-import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { Plus } from 'lucide-react';
+import { trackClick } from '../hooks/useAnalytics';
 
 interface ProductCardProps {
     id: string;
@@ -14,23 +15,26 @@ interface ProductCardProps {
 const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, category, isNew }) => {
     const navigate = useNavigate();
 
+    const handleClick = () => {
+        trackClick(`product-card-${id}`);
+        navigate(`/product/${id}`);
+    };
+
     return (
         <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            onClick={() => navigate(`/product/${id}`)}
+            onClick={handleClick}
             style={{
                 display: 'flex',
                 flexDirection: 'column',
-                cursor: 'pointer',
                 position: 'relative',
                 background: '#fff',
                 borderRadius: '32px',
                 padding: '12px',
                 transition: 'all 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
-                border: '1px solid #f0f0f0'
+                border: '1px solid #f0f0f0',
+                cursor: 'pointer'
             }}
             className="product-card-premium"
         >
@@ -93,10 +97,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
             </div>
 
             <div style={{ padding: '20px 12px 12px' }}>
-                <p style={{ fontSize: '11px', color: '#aaa', fontWeight: 800, marginBottom: '6px', letterSpacing: '0.05em' }}>{category.toUpperCase()}</p>
+                <p style={{ fontSize: '11px', color: '#aaa', fontWeight: 800, marginBottom: '6px', letterSpacing: '0.05em' }}>{(category || '').toUpperCase()}</p>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.02em' }}>{name}</h3>
-                    <p style={{ fontSize: '18px', color: '#1a1a1a', fontWeight: 800 }}>${price}</p>
+                    <p style={{ fontSize: '18px', color: '#1a1a1a', fontWeight: 800 }}>GH₵ {price}</p>
                 </div>
             </div>
 
@@ -109,9 +113,29 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
                     opacity: 1;
                     transform: translateY(0);
                 }
+                @media (max-width: 768px) {
+                    .product-card-premium {
+                        border-radius: 20px !important;
+                        padding: 8px !important;
+                    }
+                    .product-card-premium > div:first-child {
+                        padding: 16px !important;
+                        border-radius: 16px !important;
+                    }
+                    .product-card-premium h3 {
+                        font-size: 14px !important;
+                    }
+                    .product-card-premium p:last-child {
+                        font-size: 14px !important;
+                    }
+                    .quick-add-btn {
+                        display: none !important;
+                    }
+                }
             `}</style>
         </motion.div>
     );
 };
 
 export default ProductCard;
+

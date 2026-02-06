@@ -1,601 +1,558 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
-import { ChevronLeft, CreditCard, Truck, Shield, Check } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+    ChevronLeft,
+    Truck,
+    Clock,
+    Zap,
+    CheckCircle2,
+    ShieldCheck,
+    ArrowRight,
+    MapPin,
+    Plus,
+    X,
+    Loader2,
+    AlertTriangle
+} from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
+import Sidebar from '../components/Sidebar';
 
-interface ShippingAddress {
-    firstName: string;
-    lastName: string;
-    email: string;
+interface Address {
+    id: string;
+    full_name: string;
     phone: string;
-    address: string;
+    address_line: string;
     city: string;
-    state: string;
-    zipCode: string;
-    country: string;
+    is_default: boolean;
 }
 
-const Checkout = () => {
-    const navigate = useNavigate();
-    const { items, total, clearCart } = useCart();
-    const { user } = useAuth();
-    const [step, setStep] = useState(1);
-    const [loading, setLoading] = useState(false);
-    const [orderComplete, setOrderComplete] = useState(false);
-    const [orderId, setOrderId] = useState<string | null>(null);
+const DELIVERY_METHODS = [
+    { id: 'same-day', label: 'Same-day', price: 50, icon: <Zap size={18} />, desc: 'Delivery today' },
+    { id: 'express', label: 'Express', price: 30, icon: <Truck size={18} />, desc: '1-2 business days' },
+    { id: 'normal', label: 'Normal', price: 15, icon: <Clock size={18} />, desc: '3-5 business days' },
+];
 
-    const [shippingAddress, setShippingAddress] = useState<ShippingAddress>({
-        firstName: '',
-        lastName: '',
-        email: user?.email || '',
+const Checkout = () => {
+    const { items, total, clearCart } = useCart();
+    const { user, profile } = useAuth();
+    const navigate = useNavigate();
+
+    const [loading, setLoading] = useState(false);
+    const [fulfillmentStatus, setFulfillmentStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle');
+    const [errorMessage, setErrorMessage] = useState('');
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [addresses, setAddresses] = useState<Address[]>([]);
+    const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
+    const [deliveryMethod, setDeliveryMethod] = useState('express');
+    const [isAddingNew, setIsAddingNew] = useState(false);
+
+    // Discount State
+    const [discountCode, setDiscountCode] = useState('');
+    const [appliedDiscount, setAppliedDiscount] = useState<any>(null);
+    const [discountLoading, setDiscountLoading] = useState(false);
+    const [discountError, setDiscountError] = useState('');
+
+    const [newAddress, setNewAddress] = useState({
+        full_name: profile?.full_name || '',
         phone: '',
-        address: '',
+        address_line: '',
         city: '',
-        state: '',
-        zipCode: '',
-        country: 'United States'
+        is_default: false
     });
 
-    const [paymentMethod, setPaymentMethod] = useState('card');
+    useEffect(() => {
+        if (user) {
+            fetchAddresses();
+        }
+    }, [user]);
 
-    const shipping = total > 500 ? 0 : 25;
-    const tax = total * 0.08;
-    const grandTotal = total + shipping + tax;
+    const fetchAddresses = async () => {
+        const { data, error } = await supabase
+            .from('shipping_addresses')
+            .select('*')
+            .order('is_default', { ascending: false });
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setShippingAddress(prev => ({
-            ...prev,
-            [e.target.name]: e.target.value
-        }));
+        if (!error && data) {
+            setAddresses(data);
+            if (data.length > 0) setSelectedAddress(data[0]);
+        }
     };
 
-    const handleSubmitOrder = async () => {
-        if (!user) {
-            navigate('/auth');
+    const handleAddAddress = async () => {
+        if (!newAddress.address_line || !newAddress.phone || !newAddress.city) {
+            alert('Please fill in all address details');
+            return;
+        }
+
+        setLoading(true);
+        const { data, error } = await supabase
+            .from('shipping_addresses')
+            .insert([{ ...newAddress, user_id: user?.id }])
+            .select()
+            .single();
+
+        setLoading(false);
+        if (!error && data) {
+            setAddresses([data, ...addresses]);
+            setSelectedAddress(data);
+            setIsAddingNew(false);
+        }
+    };
+
+    const handleApplyDiscount = async () => {
+        if (!discountCode.trim()) return;
+        setDiscountLoading(true);
+        setDiscountError('');
+        try {
+            const { data, error } = await supabase
+                .from('discounts')
+                .select('*')
+                .eq('code', discountCode.toUpperCase())
+                .eq('is_active', true)
+                .single();
+
+            if (error || !data) throw new Error('Invalid code');
+
+            // Validate limits
+            if (data.max_uses && data.used_count >= data.max_uses) throw new Error('Usage limit reached');
+            if (data.expires_at && new Date(data.expires_at) < new Date()) throw new Error('Code expired');
+
+            setAppliedDiscount(data);
+        } catch (err: any) {
+            setDiscountError(err.message || 'Invalid code');
+            setAppliedDiscount(null);
+        } finally {
+            setDiscountLoading(false);
+        }
+    };
+
+    const deliveryPrice = DELIVERY_METHODS.find(m => m.id === deliveryMethod)?.price || 0;
+
+    // Calculate totals
+    const subtotal = total;
+    let discountAmount = 0;
+    if (appliedDiscount) {
+        if (appliedDiscount.type === 'percentage') {
+            discountAmount = subtotal * (appliedDiscount.value / 100);
+        } else {
+            discountAmount = appliedDiscount.value;
+        }
+    }
+    const grandTotal = Math.max(0, subtotal + deliveryPrice - discountAmount);
+
+    // DIRECT PAYSTACK IMPLEMENTATION using window.PaystackPop
+    const payWithPaystack = () => {
+        const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+
+        if (!publicKey) {
+            alert('Payment configuration error: Missing Public Key');
             return;
         }
 
         setLoading(true);
 
+        // @ts-ignore
+        if (!window.PaystackPop) {
+            alert('Payment provider failed to load. Please refresh and try again.');
+            setLoading(false);
+            return;
+        }
+
+        const Reference = `PAY-${Date.now()}-${Math.floor(Math.random() * 1000000)}`;
+
+        // @ts-ignore
+        const handler = window.PaystackPop.setup({
+            key: publicKey,
+            email: user?.email || 'customer@example.com',
+            amount: Math.round((grandTotal) * 100), // in pesewas
+            currency: 'GHS',
+            ref: Reference,
+            metadata: {
+                custom_fields: [
+                    { display_name: "Delivery Method", variable_name: "delivery_method", value: deliveryMethod }
+                ]
+            },
+            onClose: function () {
+                console.log('Payment window closed');
+                setLoading(false);
+            },
+            callback: function (response: any) {
+                console.log('Payment complete! Reference:', response.reference);
+                handlePaymentSuccess(response);
+            }
+        });
+
+        handler.openIframe();
+    };
+
+
+    const handlePaymentSuccess = async (response: any) => {
+        setLoading(true);
+        setFulfillmentStatus('processing');
+
         try {
-            // Create order
-            const { data: order, error: orderError } = await supabase
-                .from('orders')
-                .insert({
-                    user_id: user.id,
-                    status: 'pending',
-                    total: grandTotal,
-                    subtotal: total,
-                    shipping_cost: shipping,
-                    tax: tax,
-                    shipping_address: shippingAddress,
-                    payment_method: paymentMethod,
-                    payment_status: 'paid' // Simulating payment success
-                })
-                .select()
-                .single();
+            console.log('Verifying payment on server with reference:', response.reference);
 
-            if (orderError) throw orderError;
+            // Server-side verification
+            const { data: { session } } = await supabase.auth.getSession();
 
-            // Create order items
-            const orderItems = items.map(item => ({
-                order_id: order.id,
-                product_id: item.product_id,
-                variant_id: item.variant_id || null,
-                quantity: item.quantity,
-                price: item.price,
-                total: item.price * item.quantity,
-                product_name: item.name,
-                product_image: item.image
-            }));
+            if (!session) throw new Error('User session not found');
 
-            const { error: itemsError } = await supabase
-                .from('order_items')
-                .insert(orderItems);
+            const { data, error } = await supabase.functions.invoke('verify_payment', {
+                body: {
+                    reference: response.reference,
+                    deliveryMethodId: deliveryMethod,
+                    addressId: selectedAddress?.id || null,
+                    discountCode: appliedDiscount?.code || null
+                },
+                headers: {
+                    Authorization: `Bearer ${session.access_token}`
+                }
+            });
 
-            if (itemsError) throw itemsError;
+            if (error) {
+                console.error('SERVER ERROR:', error);
+                throw new Error('Server connection failed: ' + error.message);
+            }
 
-            // Clear cart in database
-            await supabase.from('cart_items').delete().eq('user_id', user.id);
-            clearCart();
+            if (!data || data.error) {
+                console.error('VERIFICATION ERROR:', data?.error);
+                throw new Error(data?.error || 'Payment could not be verified.');
+            }
 
-            setOrderId(order.id);
-            setOrderComplete(true);
-        } catch (error) {
-            console.error('Error creating order:', error);
-            alert('There was an error processing your order. Please try again.');
+            console.log('Order created successfully:', data);
+
+            await clearCart();
+            setFulfillmentStatus('success');
+
+        } catch (error: any) {
+            console.error('Checkout Error:', error);
+            setErrorMessage(error.message);
+            setFulfillmentStatus('error');
         } finally {
             setLoading(false);
         }
     };
 
-    if (orderComplete && orderId) {
+    // UI for different states
+    if (fulfillmentStatus === 'processing' || fulfillmentStatus === 'success' || fulfillmentStatus === 'error') {
         return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
-                <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    style={{ textAlign: 'center', maxWidth: '500px' }}
-                >
-                    <div style={{
-                        width: '100px',
-                        height: '100px',
-                        background: '#10b981',
-                        borderRadius: '50%',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        margin: '0 auto 32px'
-                    }}>
-                        <Check size={50} color="white" />
-                    </div>
-                    <h1 style={{ fontSize: '36px', fontWeight: 900, marginBottom: '16px' }}>Order Confirmed!</h1>
-                    <p style={{ color: '#666', fontSize: '16px', marginBottom: '24px' }}>
-                        Thank you for your purchase. Your order has been placed successfully.
-                    </p>
-                    <p style={{ fontSize: '14px', color: '#888', marginBottom: '32px' }}>
-                        Order ID: <strong style={{ color: '#333' }}>{orderId.slice(0, 8).toUpperCase()}</strong>
-                    </p>
-                    <div style={{ display: 'flex', gap: '16px', justifyContent: 'center' }}>
-                        <Link
-                            to={`/orders/${orderId}`}
-                            style={{
-                                padding: '16px 32px',
-                                background: 'black',
-                                color: 'white',
-                                borderRadius: '14px',
-                                fontWeight: 800,
-                                textDecoration: 'none'
-                            }}
-                        >
-                            Track Order
-                        </Link>
-                        <Link
-                            to="/products"
-                            style={{
-                                padding: '16px 32px',
-                                background: '#f5f5f7',
-                                color: '#333',
-                                borderRadius: '14px',
-                                fontWeight: 800,
-                                textDecoration: 'none'
-                            }}
-                        >
-                            Continue Shopping
-                        </Link>
-                    </div>
-                </motion.div>
-            </div>
-        );
-    }
+            <div className="layout-with-sidebar" style={{ background: '#fff' }}>
+                <Sidebar />
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '40px' }}>
+                    <AnimatePresence mode="wait">
+                        {fulfillmentStatus === 'processing' && (
+                            <motion.div key="proc" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} style={{ textAlign: 'center' }}>
+                                <Loader2 className="animate-spin" size={60} style={{ color: '#5544ff', margin: '0 auto 24px' }} />
+                                <h1 style={{ fontSize: '28px', fontWeight: 900, marginBottom: '16px', color: '#0F172A' }}>Verifying Payment</h1>
+                                <p style={{ color: '#64748B', fontSize: '16px' }}>Securely verifying transaction with Paystack server...</p>
+                            </motion.div>
+                        )}
 
-    if (items.length === 0) {
-        return (
-            <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px' }}>
-                <div style={{ textAlign: 'center' }}>
-                    <h1 style={{ fontSize: '32px', fontWeight: 900, marginBottom: '16px' }}>Your cart is empty</h1>
-                    <Link to="/products" style={{ color: 'var(--primary-color)', fontWeight: 700 }}>Browse Products</Link>
+                        {fulfillmentStatus === 'success' && (
+                            <motion.div key="succ" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'center', maxWidth: '450px' }}>
+                                <div style={{ width: '100px', height: '100px', background: '#F0FDF4', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#10B981' }}>
+                                    <CheckCircle2 size={50} />
+                                </div>
+                                <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#0F172A', marginBottom: '16px' }}>Payment Successful!</h1>
+                                <p style={{ color: '#64748B', fontSize: '16px', lineHeight: 1.6, marginBottom: '32px' }}>Your transaction has been verified and your order is confirmed.</p>
+                                <button onClick={() => navigate('/orders')} style={{ width: '100%', padding: '18px', background: '#5544ff', color: '#fff', borderRadius: '16px', fontSize: '16px', fontWeight: 800, border: 'none', cursor: 'pointer', boxShadow: '0 10px 20px rgba(85, 68, 255, 0.2)' }}>Track My Order</button>
+                            </motion.div>
+                        )}
+
+                        {fulfillmentStatus === 'error' && (
+                            <motion.div key="err" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} style={{ textAlign: 'center', maxWidth: '500px' }}>
+                                <div style={{ width: '100px', height: '100px', background: '#FEF2F2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', color: '#EF4444' }}>
+                                    <AlertTriangle size={50} />
+                                </div>
+                                <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', marginBottom: '16px' }}>Verification Failed</h1>
+                                <p style={{ color: '#64748B', fontSize: '15px', lineHeight: 1.6, marginBottom: '12px' }}>We received a signal from the payment provider, but our server could not verify the transaction details.</p>
+                                <div style={{ background: '#FFF5F5', padding: '20px', borderRadius: '16px', fontSize: '14px', color: '#EF4444', fontWeight: 700, marginBottom: '32px', textAlign: 'left', border: '1px solid #FEE2E2' }}>
+                                    Error: {errorMessage}
+                                </div>
+                                <div style={{ display: 'flex', gap: '12px' }}>
+                                    <button onClick={() => setFulfillmentStatus('idle')} style={{ flex: 1, padding: '16px', background: '#F1F5F9', color: '#64748B', borderRadius: '14px', fontWeight: 800, border: 'none', cursor: 'pointer' }}>Try Again</button>
+                                    <button onClick={() => navigate('/orders')} style={{ flex: 1, padding: '16px', background: '#0F172A', color: '#fff', borderRadius: '14px', fontWeight: 800, border: 'none', cursor: 'pointer' }}>View Orders</button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
             </div>
         );
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: '#fafafa', padding: '40px' }}>
-            <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                {/* Header */}
-                <div style={{ marginBottom: '40px' }}>
-                    <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#888', fontWeight: 700, fontSize: '13px', textDecoration: 'none', marginBottom: '16px' }}>
-                        <ChevronLeft size={16} /> Back to Cart
+        <div className="layout-with-sidebar">
+            <Sidebar />
+
+            <div style={{ flex: 1, background: '#fff', minHeight: '100vh', padding: '20px' }}>
+                <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+
+                    <Link to="/cart" style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#64748B', textDecoration: 'none', fontWeight: 700, fontSize: '13px', marginBottom: '24px' }}>
+                        <ChevronLeft size={14} /> Back to Bag
                     </Link>
-                    <h1 style={{ fontSize: '36px', fontWeight: 900, letterSpacing: '-0.03em' }}>Checkout</h1>
-                </div>
 
-                {/* Progress Steps */}
-                <div style={{ display: 'flex', gap: '16px', marginBottom: '48px' }}>
-                    {['Shipping', 'Payment', 'Review'].map((label, idx) => (
-                        <div key={label} style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <div style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                background: step > idx ? '#10b981' : step === idx + 1 ? 'black' : '#e5e5e5',
-                                color: step >= idx + 1 ? 'white' : '#888',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontWeight: 800,
-                                fontSize: '13px'
-                            }}>
-                                {step > idx ? <Check size={16} /> : idx + 1}
-                            </div>
-                            <span style={{ fontWeight: 700, fontSize: '14px', color: step === idx + 1 ? 'black' : '#888' }}>{label}</span>
-                            {idx < 2 && <div style={{ width: '60px', height: '2px', background: step > idx + 1 ? '#10b981' : '#e5e5e5' }} />}
-                        </div>
-                    ))}
-                </div>
+                    <div className="checkout-grid" style={{ display: 'flex', gap: '40px' }}>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '48px' }}>
-                    {/* Main Content */}
-                    <div>
-                        {step === 1 && (
-                            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div style={{ background: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #eee' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-                                        <Truck size={24} />
-                                        <h2 style={{ fontSize: '20px', fontWeight: 900 }}>Shipping Information</h2>
-                                    </div>
+                        <div style={{ width: '340px' }} className="order-summary-col">
+                            <div style={{ background: '#F8FAFC', borderRadius: '32px', padding: '32px', border: '1px solid #F1F5F9' }}>
+                                <h2 style={{ fontSize: '20px', fontWeight: 900, color: '#0F172A', marginBottom: '24px' }}>Summary</h2>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>First Name</label>
-                                            <input
-                                                type="text"
-                                                name="firstName"
-                                                value={shippingAddress.firstName}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                            />
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+                                    {items.map(item => (
+                                        <div key={item.id} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                                            <div style={{ width: '48px', height: '48px', background: '#fff', borderRadius: '12px', border: '1px solid #eee', padding: '4px' }}>
+                                                <img src={item.image} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <p style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', margin: 0 }}>{item.quantity}x {item.name}</p>
+                                                <p style={{ fontSize: '11px', color: '#64748B', margin: 0 }}>GH₵ {item.price}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>Last Name</label>
-                                            <input
-                                                type="text"
-                                                name="lastName"
-                                                value={shippingAddress.lastName}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>Email</label>
-                                            <input
-                                                type="email"
-                                                name="email"
-                                                value={shippingAddress.email}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>Phone</label>
-                                            <input
-                                                type="tel"
-                                                name="phone"
-                                                value={shippingAddress.phone}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                            />
-                                        </div>
-                                        <div style={{ gridColumn: 'span 2' }}>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>Address</label>
-                                            <input
-                                                type="text"
-                                                name="address"
-                                                value={shippingAddress.address}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>City</label>
-                                            <input
-                                                type="text"
-                                                name="city"
-                                                value={shippingAddress.city}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>State</label>
-                                            <input
-                                                type="text"
-                                                name="state"
-                                                value={shippingAddress.state}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>ZIP Code</label>
-                                            <input
-                                                type="text"
-                                                name="zipCode"
-                                                value={shippingAddress.zipCode}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>Country</label>
-                                            <select
-                                                name="country"
-                                                value={shippingAddress.country}
-                                                onChange={handleInputChange}
-                                                style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600, background: 'white' }}
-                                            >
-                                                <option>United States</option>
-                                                <option>Canada</option>
-                                                <option>United Kingdom</option>
-                                                <option>Germany</option>
-                                                <option>France</option>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <button
-                                        onClick={() => setStep(2)}
-                                        style={{
-                                            marginTop: '32px',
-                                            width: '100%',
-                                            padding: '18px',
-                                            background: 'black',
-                                            color: 'white',
-                                            borderRadius: '14px',
-                                            fontWeight: 800,
-                                            fontSize: '15px',
-                                            border: 'none',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        Continue to Payment
-                                    </button>
+                                    ))}
                                 </div>
-                            </motion.div>
-                        )}
 
-                        {step === 2 && (
-                            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div style={{ background: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #eee' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-                                        <CreditCard size={24} />
-                                        <h2 style={{ fontSize: '20px', fontWeight: 900 }}>Payment Method</h2>
-                                    </div>
-
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                                        {[
-                                            { id: 'card', label: 'Credit / Debit Card', icon: '💳' },
-                                            { id: 'paypal', label: 'PayPal', icon: '🅿️' },
-                                            { id: 'apple', label: 'Apple Pay', icon: '🍎' }
-                                        ].map(method => (
-                                            <div
-                                                key={method.id}
-                                                onClick={() => setPaymentMethod(method.id)}
-                                                style={{
-                                                    padding: '20px',
-                                                    borderRadius: '16px',
-                                                    border: paymentMethod === method.id ? '2px solid black' : '1px solid #eee',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    gap: '16px',
-                                                    cursor: 'pointer',
-                                                    background: paymentMethod === method.id ? '#f9f9fb' : 'white'
-                                                }}
+                                {/* Discount Section */}
+                                <div style={{ marginBottom: '20px' }}>
+                                    <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>Discount Code</h3>
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                            type="text"
+                                            value={discountCode}
+                                            onChange={(e) => setDiscountCode(e.target.value.toUpperCase())}
+                                            placeholder="Enter code"
+                                            disabled={!!appliedDiscount}
+                                            style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '13px', fontWeight: 700, outline: 'none', textTransform: 'uppercase' }}
+                                        />
+                                        {!appliedDiscount ? (
+                                            <button
+                                                onClick={handleApplyDiscount}
+                                                disabled={discountLoading || !discountCode}
+                                                style={{ padding: '0 16px', borderRadius: '10px', background: '#0F172A', color: 'white', fontWeight: 700, fontSize: '13px', border: 'none', cursor: 'pointer', opacity: discountLoading ? 0.7 : 1 }}
                                             >
-                                                <span style={{ fontSize: '24px' }}>{method.icon}</span>
-                                                <span style={{ fontWeight: 700, fontSize: '15px' }}>{method.label}</span>
-                                                {paymentMethod === method.id && (
-                                                    <div style={{ marginLeft: 'auto', width: '24px', height: '24px', background: 'black', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                        <Check size={14} color="white" />
-                                                    </div>
-                                                )}
-                                            </div>
-                                        ))}
+                                                {discountLoading ? '...' : 'Apply'}
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={() => { setAppliedDiscount(null); setDiscountCode(''); }}
+                                                style={{ padding: '0 12px', borderRadius: '10px', background: '#EF4444', color: 'white', border: 'none', cursor: 'pointer' }}
+                                            >
+                                                <X size={16} />
+                                            </button>
+                                        )}
                                     </div>
+                                    {discountError && <p style={{ fontSize: '11px', color: '#EF4444', fontWeight: 600, marginTop: '4px' }}>{discountError}</p>}
+                                    {appliedDiscount && <p style={{ fontSize: '11px', color: '#10B981', fontWeight: 600, marginTop: '4px' }}>Code applied: -GH₵ {discountAmount.toFixed(2)}</p>}
+                                </div>
 
-                                    {paymentMethod === 'card' && (
-                                        <div style={{ marginTop: '32px', display: 'grid', gap: '20px' }}>
-                                            <div>
-                                                <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>Card Number</label>
-                                                <input
-                                                    type="text"
-                                                    placeholder="1234 5678 9012 3456"
-                                                    style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                                />
-                                            </div>
-                                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                                                <div>
-                                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>Expiry Date</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="MM/YY"
-                                                        style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                                    />
-                                                </div>
-                                                <div>
-                                                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 700, color: '#888', marginBottom: '8px', textTransform: 'uppercase' }}>CVC</label>
-                                                    <input
-                                                        type="text"
-                                                        placeholder="123"
-                                                        style={{ width: '100%', padding: '14px', borderRadius: '12px', border: '1px solid #eee', fontSize: '14px', fontWeight: 600 }}
-                                                    />
-                                                </div>
-                                            </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', borderTop: '1px solid #E2E8F0', paddingTop: '20px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: '#64748B' }}>
+                                        <span>Subtotal</span>
+                                        <span>GH₵ {total.toFixed(2)}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: '#64748B' }}>
+                                        <span>Shipping</span>
+                                        <span style={{ color: '#10B981' }}>+ GH₵ {deliveryPrice.toFixed(2)}</span>
+                                    </div>
+                                    {appliedDiscount && (
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, color: '#EF4444' }}>
+                                            <span>Discount</span>
+                                            <span>- GH₵ {discountAmount.toFixed(2)}</span>
                                         </div>
                                     )}
-
-                                    <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
-                                        <button
-                                            onClick={() => setStep(1)}
-                                            style={{
-                                                flex: 1,
-                                                padding: '18px',
-                                                background: '#f5f5f7',
-                                                color: '#333',
-                                                borderRadius: '14px',
-                                                fontWeight: 800,
-                                                fontSize: '15px',
-                                                border: 'none',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            Back
-                                        </button>
-                                        <button
-                                            onClick={() => setStep(3)}
-                                            style={{
-                                                flex: 2,
-                                                padding: '18px',
-                                                background: 'black',
-                                                color: 'white',
-                                                borderRadius: '14px',
-                                                fontWeight: 800,
-                                                fontSize: '15px',
-                                                border: 'none',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            Review Order
-                                        </button>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '20px', fontWeight: 900, color: '#0F172A', marginTop: '12px' }}>
+                                        <span>Total</span>
+                                        <span>GH₵ {grandTotal.toFixed(2)}</span>
                                     </div>
                                 </div>
-                            </motion.div>
-                        )}
 
-                        {step === 3 && (
-                            <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
-                                <div style={{ background: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #eee' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '32px' }}>
-                                        <Shield size={24} />
-                                        <h2 style={{ fontSize: '20px', fontWeight: 900 }}>Review Your Order</h2>
-                                    </div>
+                                <button
+                                    onClick={() => {
+                                        if (!selectedAddress) {
+                                            setShowAddressModal(true);
+                                            return;
+                                        }
+                                        payWithPaystack();
+                                    }}
+                                    disabled={loading || items.length === 0}
+                                    style={{
+                                        width: '100%',
+                                        background: (loading || items.length === 0) ? '#94A3B8' : '#0F172A',
+                                        color: '#fff',
+                                        height: '60px',
+                                        borderRadius: '20px',
+                                        fontSize: '15px',
+                                        fontWeight: 800,
+                                        marginTop: '32px',
+                                        cursor: (loading || items.length === 0) ? 'not-allowed' : 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '10px'
+                                    }}
+                                >
+                                    {loading ? 'Processing...' : `Pay GH₵ ${grandTotal.toFixed(2)}`}
+                                    {!loading && <ArrowRight size={18} />}
+                                </button>
+                            </div>
 
-                                    {/* Shipping Summary */}
-                                    <div style={{ padding: '20px', background: '#f9f9fb', borderRadius: '16px', marginBottom: '24px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                            <span style={{ fontWeight: 800, fontSize: '14px' }}>Shipping Address</span>
-                                            <button onClick={() => setStep(1)} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Edit</button>
-                                        </div>
-                                        <p style={{ fontSize: '14px', color: '#666', lineHeight: 1.6 }}>
-                                            {shippingAddress.firstName} {shippingAddress.lastName}<br />
-                                            {shippingAddress.address}<br />
-                                            {shippingAddress.city}, {shippingAddress.state} {shippingAddress.zipCode}<br />
-                                            {shippingAddress.country}
-                                        </p>
-                                    </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginTop: '24px', padding: '0 16px', opacity: 0.6 }}>
+                                <ShieldCheck size={16} />
+                                <span style={{ fontSize: '12px', fontWeight: 700 }}>Secure checkout powered by Paystack</span>
+                            </div>
+                        </div>
 
-                                    {/* Payment Summary */}
-                                    <div style={{ padding: '20px', background: '#f9f9fb', borderRadius: '16px', marginBottom: '24px' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                            <span style={{ fontWeight: 800, fontSize: '14px' }}>Payment Method</span>
-                                            <button onClick={() => setStep(2)} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>Edit</button>
-                                        </div>
-                                        <p style={{ fontSize: '14px', color: '#666' }}>
-                                            {paymentMethod === 'card' ? 'Credit/Debit Card' : paymentMethod === 'paypal' ? 'PayPal' : 'Apple Pay'}
-                                        </p>
-                                    </div>
+                        <div style={{ flex: 1 }}>
+                            <h1 style={{ fontSize: '36px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.04em', marginBottom: '32px' }}>Checkout</h1>
 
-                                    {/* Order Items */}
-                                    <div style={{ marginBottom: '24px' }}>
-                                        <h3 style={{ fontWeight: 800, fontSize: '14px', marginBottom: '16px' }}>Order Items ({items.length})</h3>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                                            {items.map(item => (
-                                                <div key={item.id} style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
-                                                    <div style={{ width: '60px', height: '60px', background: '#f5f5f7', borderRadius: '12px', padding: '8px' }}>
-                                                        <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                                    </div>
-                                                    <div style={{ flex: 1 }}>
-                                                        <p style={{ fontWeight: 700, fontSize: '14px' }}>{item.name}</p>
-                                                        <p style={{ color: '#888', fontSize: '13px' }}>Qty: {item.quantity}</p>
-                                                    </div>
-                                                    <p style={{ fontWeight: 800 }}>${(item.price * item.quantity).toLocaleString()}</p>
-                                                </div>
-                                            ))}
-                                        </div>
+                            <div style={{ marginBottom: '40px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '24px', height: '24px', background: '#F1F5F9', color: '#0F172A', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 900 }}>1</div>
+                                        <h2 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Shipping Address</h2>
                                     </div>
-
-                                    <div style={{ display: 'flex', gap: '16px' }}>
-                                        <button
-                                            onClick={() => setStep(2)}
-                                            style={{
-                                                flex: 1,
-                                                padding: '18px',
-                                                background: '#f5f5f7',
-                                                color: '#333',
-                                                borderRadius: '14px',
-                                                fontWeight: 800,
-                                                fontSize: '15px',
-                                                border: 'none',
-                                                cursor: 'pointer'
-                                            }}
-                                        >
-                                            Back
-                                        </button>
-                                        <button
-                                            onClick={handleSubmitOrder}
-                                            disabled={loading}
-                                            style={{
-                                                flex: 2,
-                                                padding: '18px',
-                                                background: loading ? '#ccc' : '#10b981',
-                                                color: 'white',
-                                                borderRadius: '14px',
-                                                fontWeight: 800,
-                                                fontSize: '15px',
-                                                border: 'none',
-                                                cursor: loading ? 'not-allowed' : 'pointer'
-                                            }}
-                                        >
-                                            {loading ? 'Processing...' : `Place Order • $${grandTotal.toFixed(2)}`}
-                                        </button>
-                                    </div>
+                                    <button onClick={() => setShowAddressModal(true)} style={{ color: '#5544ff', fontSize: '13px', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer' }}>Change</button>
                                 </div>
-                            </motion.div>
-                        )}
-                    </div>
 
-                    {/* Order Summary Sidebar */}
-                    <div style={{ position: 'sticky', top: '40px' }}>
-                        <div style={{ background: 'white', borderRadius: '24px', padding: '32px', border: '1px solid #eee' }}>
-                            <h3 style={{ fontSize: '18px', fontWeight: 900, marginBottom: '24px' }}>Order Summary</h3>
-
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px' }}>
-                                {items.slice(0, 3).map(item => (
-                                    <div key={item.id} style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                                        <div style={{ width: '48px', height: '48px', background: '#f5f5f7', borderRadius: '10px', padding: '6px', position: 'relative' }}>
-                                            <img src={item.image} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-                                            <div style={{ position: 'absolute', top: '-6px', right: '-6px', width: '20px', height: '20px', background: 'black', color: 'white', borderRadius: '50%', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                                {item.quantity}
-                                            </div>
+                                {selectedAddress ? (
+                                    <div style={{ background: '#fff', border: '1px solid #E2E8F0', borderRadius: '20px', padding: '20px', display: 'flex', gap: '16px' }}>
+                                        <div style={{ width: '40px', height: '40px', background: '#F8FAFC', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#5544ff' }}>
+                                            <MapPin size={20} />
                                         </div>
-                                        <div style={{ flex: 1 }}>
-                                            <p style={{ fontSize: '13px', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</p>
+                                        <div>
+                                            <p style={{ margin: 0, fontWeight: 800, fontSize: '14px', color: '#0F172A' }}>{selectedAddress.full_name}</p>
+                                            <p style={{ margin: '4px 0', fontSize: '13px', color: '#64748B', fontWeight: 500 }}>{selectedAddress.address_line}, {selectedAddress.city}</p>
+                                            <p style={{ margin: 0, fontSize: '13px', color: '#64748B', fontWeight: 500 }}>{selectedAddress.phone}</p>
                                         </div>
-                                        <p style={{ fontSize: '13px', fontWeight: 800 }}>${(item.price * item.quantity).toLocaleString()}</p>
                                     </div>
-                                ))}
-                                {items.length > 3 && (
-                                    <p style={{ fontSize: '13px', color: '#888', fontWeight: 600 }}>+{items.length - 3} more items</p>
+                                ) : (
+                                    <button
+                                        onClick={() => setShowAddressModal(true)}
+                                        style={{ width: '100%', border: '2px dashed #E2E8F0', borderRadius: '20px', padding: '32px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', cursor: 'pointer', background: '#fff' }}
+                                    >
+                                        <div style={{ width: '48px', height: '48px', background: '#F8FAFC', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8' }}>
+                                            <Plus size={24} />
+                                        </div>
+                                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#94A3B8' }}>Select or Add Shipping Address</span>
+                                    </button>
                                 )}
                             </div>
 
-                            <div style={{ borderTop: '1px solid #eee', paddingTop: '24px' }}>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
-                                    <span style={{ color: '#888' }}>Subtotal</span>
-                                    <span style={{ fontWeight: 700 }}>${total.toLocaleString()}</span>
+                            <div style={{ marginBottom: '40px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                                    <div style={{ width: '24px', height: '24px', background: '#F1F5F9', color: '#0F172A', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 900 }}>2</div>
+                                    <h2 style={{ fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>Delivery Speed</h2>
                                 </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px', fontSize: '14px' }}>
-                                    <span style={{ color: '#888' }}>Shipping</span>
-                                    <span style={{ fontWeight: 700 }}>{shipping === 0 ? 'FREE' : `$${shipping}`}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '24px', fontSize: '14px' }}>
-                                    <span style={{ color: '#888' }}>Tax (8%)</span>
-                                    <span style={{ fontWeight: 700 }}>${tax.toFixed(2)}</span>
-                                </div>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', paddingTop: '16px', borderTop: '1px solid #eee' }}>
-                                    <span style={{ fontWeight: 800, fontSize: '16px' }}>Total</span>
-                                    <span style={{ fontWeight: 900, fontSize: '24px' }}>${grandTotal.toFixed(2)}</span>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px' }}>
+                                    {DELIVERY_METHODS.map(method => (
+                                        <button
+                                            key={method.id}
+                                            onClick={() => setDeliveryMethod(method.id)}
+                                            style={{
+                                                display: 'flex',
+                                                flexDirection: 'column',
+                                                gap: '8px',
+                                                padding: '16px',
+                                                borderRadius: '20px',
+                                                border: '1px solid',
+                                                borderColor: deliveryMethod === method.id ? '#5544ff' : '#E2E8F0',
+                                                background: deliveryMethod === method.id ? '#F5F5FF' : '#fff',
+                                                cursor: 'pointer',
+                                                textAlign: 'left',
+                                                transition: 'all 0.2s'
+                                            }}
+                                        >
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', color: deliveryMethod === method.id ? '#5544ff' : '#64748B' }}>
+                                                {method.icon}
+                                                <span style={{ fontSize: '12px', fontWeight: 900 }}>GH₵ {method.price}</span>
+                                            </div>
+                                            <div>
+                                                <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>{method.label}</p>
+                                                <p style={{ margin: 0, fontSize: '11px', color: '#64748B' }}>{method.desc}</p>
+                                            </div>
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <AnimatePresence>
+                {showAddressModal && (
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowAddressModal(false)} style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(8px)' }} />
+                        <motion.div initial={{ y: 100, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 100, opacity: 0 }} style={{ position: 'relative', width: '450px', background: '#fff', borderRadius: '32px', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)' }}>
+                            <div style={{ padding: '24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #F1F5F9' }}>
+                                <h2 style={{ fontSize: '18px', fontWeight: 900 }}>{isAddingNew ? 'Add New Address' : 'Select Address'}</h2>
+                                <button onClick={() => { setShowAddressModal(false); setIsAddingNew(false); }} style={{ color: '#64748B', background: 'none', border: 'none', cursor: 'pointer' }}><X size={20} /></button>
+                            </div>
+
+                            <div style={{ padding: '24px', maxHeight: '400px', overflowY: 'auto' }}>
+                                {!isAddingNew ? (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                        {addresses.map(addr => (
+                                            <button
+                                                key={addr.id}
+                                                onClick={() => { setSelectedAddress(addr); setShowAddressModal(false); }}
+                                                style={{ textAlign: 'left', padding: '16px', borderRadius: '16px', border: '1px solid', borderColor: selectedAddress?.id === addr.id ? '#5544ff' : '#E2E8F0', background: selectedAddress?.id === addr.id ? '#F5F5FF' : '#fff', cursor: 'pointer' }}
+                                            >
+                                                <p style={{ margin: 0, fontWeight: 800, fontSize: '14px' }}>{addr.full_name}</p>
+                                                <p style={{ margin: '4px 0', fontSize: '12px', color: '#64748B' }}>{addr.address_line}, {addr.city}</p>
+                                                <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>{addr.phone}</p>
+                                            </button>
+                                        ))}
+                                        <button
+                                            onClick={() => setIsAddingNew(true)}
+                                            style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#5544ff', fontWeight: 800, fontSize: '14px', padding: '12px', background: 'none', border: 'none', cursor: 'pointer' }}
+                                        >
+                                            <Plus size={16} /> Add a new address
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                                        <div className="modal-input">
+                                            <label>Full Name</label>
+                                            <input type="text" value={newAddress.full_name} onChange={e => setNewAddress({ ...newAddress, full_name: e.target.value })} placeholder="Recepient Name" />
+                                        </div>
+                                        <div className="modal-input">
+                                            <label>Phone Number</label>
+                                            <input type="tel" value={newAddress.phone} onChange={e => setNewAddress({ ...newAddress, phone: e.target.value })} placeholder="+233..." />
+                                        </div>
+                                        <div className="modal-input">
+                                            <label>Address Line</label>
+                                            <input type="text" value={newAddress.address_line} onChange={e => setNewAddress({ ...newAddress, address_line: e.target.value })} placeholder="House No, Street Name" />
+                                        </div>
+                                        <div className="modal-input">
+                                            <label>City</label>
+                                            <input type="text" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} placeholder="e.g. Accra" />
+                                        </div>
+                                        <button onClick={handleAddAddress} style={{ width: '100%', height: '52px', background: '#0F172A', color: '#fff', borderRadius: '16px', fontWeight: 800, marginTop: '8px', border: 'none', cursor: 'pointer' }}>Save Address</button>
+                                        <button onClick={() => setIsAddingNew(false)} style={{ width: '100%', height: '52px', color: '#64748B', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
+                                    </div>
+                                )}
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
+            <style>{`
+                .modal-input label { display: block; font-size: 11px; font-weight: 800; color: #94A3B8; text-transform: uppercase; margin-bottom: 6px; }
+                .modal-input input { width: 100%; height: 48px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px; padding: 0 16px; font-size: 14px; font-weight: 700; outline: none; }
+                .modal-input input:focus { border-color: #5544ff; background: #fff; }
+                .animate-spin { animation: spin 1s linear infinite; }
+                @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+                @media (max-width: 800px) {
+                    .checkout-grid { flex-direction: column-reverse; }
+                    .order-summary-col { width: 100% !important; }
+                }
+            `}</style>
         </div>
     );
 };
