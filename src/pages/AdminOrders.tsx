@@ -3,8 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
-    Bell,
-    TrendingUp,
     CheckCircle2,
     Clock,
     Truck,
@@ -12,7 +10,6 @@ import {
     AlertCircle,
     X,
     Filter,
-    ChevronDown,
     MapPin,
     Calendar,
     ArrowUpRight

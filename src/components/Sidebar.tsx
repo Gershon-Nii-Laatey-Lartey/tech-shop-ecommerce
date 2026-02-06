@@ -9,7 +9,7 @@ const CategoryItem = ({ name, description }: { name: string, description?: strin
     const [isOpen, setIsOpen] = useState(false);
     const navigate = useNavigate();
 
-    const handleCategoryClick = (e: React.MouseEvent) => {
+    const handleCategoryClick = (_e: React.MouseEvent) => {
         // Stop bubbling so clicking the text navigates, but clicking the arrow toggles
         navigate(`/search?category=${encodeURIComponent(name)}`);
     };

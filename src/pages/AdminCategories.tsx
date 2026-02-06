@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Edit2, Trash2, Save, X, Search, Sun, Bell, ToggleLeft, ToggleRight, FolderTree } from 'lucide-react';
+import { Plus, Edit2, Trash2, Save, X, Search, ToggleLeft, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminSidebar from '../components/AdminSidebar';
 

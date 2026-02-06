@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     User,
@@ -71,7 +71,7 @@ const Profile = () => {
 
         // Pre-fill name if profile loaded
         if (profile?.full_name) {
-            setNewAddress(prev => ({ ...prev, full_name: profile.full_name }));
+            setNewAddress(prev => ({ ...prev, full_name: profile.full_name || '' }));
         }
     }, [user, navigate, profile]);
 

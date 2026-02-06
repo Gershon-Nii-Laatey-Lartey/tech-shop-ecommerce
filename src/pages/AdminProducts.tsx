@@ -6,9 +6,7 @@ import {
     Search,
     Plus,
     Edit,
-    Trash2,
-    Sun,
-    Bell
+    Trash2
 } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 
