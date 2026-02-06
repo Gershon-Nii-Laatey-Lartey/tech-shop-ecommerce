@@ -2,8 +2,8 @@ import { SlidersHorizontal, Search, X, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useCategories } from '../contexts/CategoryContext';
 
-const CATEGORIES = ['Laptops', 'Audio', 'Wearables', 'Vision', 'Mobile', 'Computing'];
 const SORT_OPTIONS = [
     { label: 'Newest Arrivals', value: 'latest' },
     { label: 'Price: Low to High', value: 'price-low' },
@@ -11,6 +11,7 @@ const SORT_OPTIONS = [
 ];
 
 const HeroContent = () => {
+    const { categories } = useCategories();
     const [searchQuery, setSearchQuery] = useState('');
     const [showFilters, setShowFilters] = useState(false);
     const [categoryFilter, setCategoryFilter] = useState<string | null>(null);
@@ -181,14 +182,14 @@ const HeroContent = () => {
                                 <div className="hero-filter-section">
                                     <h3>Categories</h3>
                                     <div className="hero-filter-grid">
-                                        {CATEGORIES.map(cat => (
+                                        {categories.map(cat => (
                                             <button
-                                                key={cat}
-                                                onClick={() => setCategoryFilter(categoryFilter === cat ? null : cat)}
-                                                className={`hero-filter-btn ${categoryFilter === cat ? 'active' : ''}`}
+                                                key={cat.id}
+                                                onClick={() => setCategoryFilter(categoryFilter === cat.name ? null : cat.name)}
+                                                className={`hero-filter-btn ${categoryFilter === cat.name ? 'active' : ''}`}
                                             >
-                                                {cat}
-                                                {categoryFilter === cat && <Check size={14} />}
+                                                {cat.name}
+                                                {categoryFilter === cat.name && <Check size={14} />}
                                             </button>
                                         ))}
                                     </div>

@@ -72,7 +72,7 @@ const Auth = () => {
                             <div style={{ position: 'absolute', width: '20px', height: '20px', background: 'white', borderRadius: '50% 50% 0 50%' }}></div>
                             <div style={{ position: 'absolute', bottom: 0, right: 0, width: '20px', height: '20px', background: 'white', borderRadius: '50% 0 50% 50%', opacity: 0.6 }}></div>
                         </div>
-                        <h1 style={{ fontSize: '32px', fontWeight: 900, color: 'white', letterSpacing: '-0.04em' }}>people</h1>
+                        <h1 style={{ fontSize: '32px', fontWeight: 900, color: 'white', letterSpacing: '-0.04em' }}>TECH SHOP</h1>
                     </motion.div>
 
                     <motion.h2

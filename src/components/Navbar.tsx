@@ -18,7 +18,7 @@ const Navbar = () => {
           <div style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', background: 'white', borderRadius: '50% 0 50% 50%', opacity: 0.6 }}></div>
           <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', border: '2px solid var(--primary-color)' }}></div>
         </div>
-        <span>people</span>
+        <span>TECH SHOP</span>
       </Link>
 
       <div style={{ display: 'flex', gap: '32px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', marginLeft: 'auto', alignItems: 'center' }}>

@@ -4,6 +4,7 @@ import HeroContent from '../components/HeroContent';
 import ProductCard from '../components/ProductCard';
 import Sidebar from '../components/Sidebar';
 import { supabase } from '../supabaseClient';
+import { useCategories } from '../contexts/CategoryContext';
 
 interface Product {
     id: string;
@@ -16,6 +17,7 @@ interface Product {
 
 const Home = () => {
     const navigate = useNavigate();
+    const { categories } = useCategories();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -58,15 +60,27 @@ const Home = () => {
                     scrollbarWidth: 'none',
                     msOverflowStyle: 'none'
                 }}>
-                    {['All', 'Laptops', 'Audio', 'Wearables', 'Vision'].map((cat) => (
+                    <span
+                        onClick={() => navigate('/search')}
+                        style={{
+                            padding: '8px 20px',
+                            background: '#f3f4f6',
+                            color: '#666',
+                            borderRadius: '20px',
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            whiteSpace: 'nowrap',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s'
+                        }}
+                    >
+                        All
+                    </span>
+                    {categories.map((cat) => (
                         <span
-                            key={cat}
+                            key={cat.id}
                             onClick={() => {
-                                if (cat === 'All') {
-                                    navigate('/search');
-                                } else {
-                                    navigate(`/search?q=${encodeURIComponent(cat)}`);
-                                }
+                                navigate(`/search?category=${encodeURIComponent(cat.name)}`);
                             }}
                             style={{
                                 padding: '8px 20px',
@@ -80,7 +94,7 @@ const Home = () => {
                                 transition: 'all 0.2s'
                             }}
                         >
-                            {cat}
+                            {cat.name}
                         </span>
                     ))}
                 </div>
