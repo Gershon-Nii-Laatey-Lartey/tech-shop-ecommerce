@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
@@ -27,18 +27,13 @@ interface Review {
 const FONT_FAMILY = "'Plus Jakarta Sans', 'Inter', sans-serif";
 
 const AdminReviews = () => {
-    const { isAdmin, user, profile, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
+    const { user, profile } = useAuth();
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            navigate('/');
-        }
-    }, [isAdmin, authLoading, navigate]);
+
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -114,10 +109,8 @@ const AdminReviews = () => {
     }, []);
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchReviews();
-        }
-    }, [isAdmin]);
+        fetchReviews();
+    }, []);
 
     const fetchReviews = async () => {
         try {
@@ -157,7 +150,7 @@ const AdminReviews = () => {
         }
     };
 
-    if (authLoading || !isAdmin) return null;
+
 
     const filteredReviews = reviews.filter(review =>
         review.products?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

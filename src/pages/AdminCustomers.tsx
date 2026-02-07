@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
     Search,
     Mail,
@@ -9,7 +9,6 @@ import {
     Shield
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { useAuth } from '../contexts/AuthContext';
 import AdminSidebar from '../components/AdminSidebar';
 
 interface Profile {
@@ -32,18 +31,12 @@ interface CustomerWithStats extends Profile {
 }
 
 const AdminCustomers = () => {
-    const { isAdmin, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
     const [customers, setCustomers] = useState<CustomerWithStats[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            navigate('/');
-        }
-    }, [isAdmin, authLoading, navigate]);
+
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -123,10 +116,8 @@ const AdminCustomers = () => {
     }, []);
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchCustomers();
-        }
-    }, [isAdmin]);
+        fetchCustomers();
+    }, []);
 
     const fetchCustomers = async () => {
         try {
@@ -172,12 +163,33 @@ const AdminCustomers = () => {
         }
     };
 
+    const handleRoleChange = async (userId: string, newRole: string) => {
+        if (!window.confirm(`Are you sure you want to change this user's role to ${newRole}?`)) return;
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ role: newRole })
+                .eq('id', userId);
+
+            if (error) throw error;
+
+            setCustomers(customers.map(c =>
+                c.id === userId ? { ...c, role: newRole } : c
+            ));
+            alert('Role updated successfully');
+        } catch (error) {
+            console.error('Error updating role:', error);
+            alert('Failed to update role');
+        }
+    };
+
     const filteredCustomers = customers.filter(c =>
         c.full_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (authLoading || !isAdmin) return null;
+
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>
@@ -277,20 +289,38 @@ const AdminCustomers = () => {
                                             <p style={{ margin: 0, fontWeight: 800, color: '#0F172A', fontSize: '15px' }}>{customer.full_name || 'Unnamed'}</p>
                                             <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{customer.email}</p>
                                         </div>
-                                        <div style={{
-                                            display: 'inline-flex',
-                                            alignItems: 'center',
-                                            padding: '4px 8px',
-                                            borderRadius: '20px',
-                                            fontSize: '10px',
-                                            fontWeight: 800,
-                                            textTransform: 'uppercase',
-                                            background: customer.role === 'admin' ? '#EFF6FF' : '#F1F5F9',
-                                            color: customer.role === 'admin' ? '#1E40AF' : '#64748B',
-                                            border: customer.role === 'admin' ? '1px solid #DBEAFE' : 'none'
-                                        }}>
-                                            {customer.role === 'admin' && <Shield size={10} style={{ marginRight: '2px' }} />}
-                                            {customer.role}
+                                        <div style={{ position: 'relative' }}>
+                                            <div style={{
+                                                display: 'inline-flex',
+                                                alignItems: 'center',
+                                                padding: '4px 8px',
+                                                borderRadius: '20px',
+                                                fontSize: '10px',
+                                                fontWeight: 800,
+                                                textTransform: 'uppercase',
+                                                background: customer.role === 'admin' ? '#EFF6FF' : '#F1F5F9',
+                                                color: customer.role === 'admin' ? '#1E40AF' : '#64748B',
+                                                border: customer.role === 'admin' ? '1px solid #DBEAFE' : 'none'
+                                            }}>
+                                                {customer.role === 'admin' && <Shield size={10} style={{ marginRight: '2px' }} />}
+                                                {customer.role}
+                                            </div>
+                                            <select
+                                                value={customer.role}
+                                                onChange={(e) => handleRoleChange(customer.id, e.target.value)}
+                                                style={{
+                                                    position: 'absolute',
+                                                    top: 0,
+                                                    left: 0,
+                                                    width: '100%',
+                                                    height: '100%',
+                                                    opacity: 0,
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                <option value="customer">Customer</option>
+                                                <option value="admin">Admin</option>
+                                            </select>
                                         </div>
                                     </div>
 
@@ -377,21 +407,39 @@ const AdminCustomers = () => {
                                             </div>
                                         </td>
                                         <td style={{ padding: '20px 24px' }}>
-                                            <div style={{
-                                                display: 'inline-flex',
-                                                alignItems: 'center',
-                                                gap: '4px',
-                                                padding: '4px 10px',
-                                                borderRadius: '20px',
-                                                fontSize: '11px',
-                                                fontWeight: 800,
-                                                textTransform: 'uppercase',
-                                                background: customer.role === 'admin' ? '#EFF6FF' : '#F1F5F9',
-                                                color: customer.role === 'admin' ? '#1E40AF' : '#64748B',
-                                                border: customer.role === 'admin' ? '1px solid #DBEAFE' : 'none'
-                                            }}>
-                                                {customer.role === 'admin' && <Shield size={12} />}
-                                                {customer.role}
+                                            <div style={{ position: 'relative' }}>
+                                                <div style={{
+                                                    display: 'inline-flex',
+                                                    alignItems: 'center',
+                                                    gap: '4px',
+                                                    padding: '4px 10px',
+                                                    borderRadius: '20px',
+                                                    fontSize: '11px',
+                                                    fontWeight: 800,
+                                                    textTransform: 'uppercase',
+                                                    background: customer.role === 'admin' ? '#EFF6FF' : '#F1F5F9',
+                                                    color: customer.role === 'admin' ? '#1E40AF' : '#64748B',
+                                                    border: customer.role === 'admin' ? '1px solid #DBEAFE' : '1px solid transparent'
+                                                }}>
+                                                    {customer.role === 'admin' && <Shield size={12} />}
+                                                    {customer.role}
+                                                </div>
+                                                <select
+                                                    value={customer.role}
+                                                    onChange={(e) => handleRoleChange(customer.id, e.target.value)}
+                                                    style={{
+                                                        position: 'absolute',
+                                                        top: 0,
+                                                        left: 0,
+                                                        width: '100%',
+                                                        height: '100%',
+                                                        opacity: 0,
+                                                        cursor: 'pointer'
+                                                    }}
+                                                >
+                                                    <option value="user">User</option>
+                                                    <option value="admin">Admin</option>
+                                                </select>
                                             </div>
                                         </td>
                                     </tr>

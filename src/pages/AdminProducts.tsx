@@ -56,7 +56,7 @@ interface Product {
 const FONT_FAMILY = "'Plus Jakarta Sans', 'Inter', sans-serif";
 
 const AdminProducts = () => {
-    const { isAdmin, user, profile, loading: authLoading } = useAuth();
+    const { user, profile } = useAuth();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();
@@ -171,10 +171,8 @@ const AdminProducts = () => {
     }, []);
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchProducts();
-        }
-    }, [isAdmin]);
+        fetchProducts();
+    }, []);
 
     const fetchProducts = async () => {
         try {
@@ -352,7 +350,7 @@ const AdminProducts = () => {
         }
     };
 
-    if (authLoading || !isAdmin) return null;
+
 
     const filteredProducts = products.filter(p =>
         p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

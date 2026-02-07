@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 import { Plus, Edit2, Trash2, Save, X, Search, ToggleLeft, ToggleRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminSidebar from '../components/AdminSidebar';
@@ -21,8 +20,7 @@ interface Category {
 const FONT_FAMILY = "'Plus Jakarta Sans', 'Inter', sans-serif";
 
 const AdminCategories = () => {
-    const { isAdmin, user, profile, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
+    const { user, profile } = useAuth();
     const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -37,17 +35,11 @@ const AdminCategories = () => {
         is_active: true
     });
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            navigate('/');
-        }
-    }, [isAdmin, authLoading, navigate]);
+
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchCategories();
-        }
-    }, [isAdmin]);
+        fetchCategories();
+    }, []);
 
     const fetchCategories = async () => {
         try {
@@ -159,7 +151,7 @@ const AdminCategories = () => {
         return name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
     };
 
-    if (authLoading || !isAdmin) return null;
+
 
     const filteredCategories = categories.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

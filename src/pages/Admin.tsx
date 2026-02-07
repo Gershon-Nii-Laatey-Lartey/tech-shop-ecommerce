@@ -92,7 +92,7 @@ const formatCurrency = (value: number) => {
 };
 
 const Admin = () => {
-    const { isAdmin, user, profile, loading: authLoading } = useAuth();
+    const { user, profile } = useAuth();
     const navigate = useNavigate();
     const [products, setProducts] = useState<Product[]>([]);
     const [stats, setStats] = useState<DashboardStats>({
@@ -218,17 +218,11 @@ const Admin = () => {
         document.head.appendChild(style);
     }, []);
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            navigate('/');
-        }
-    }, [isAdmin, authLoading, navigate]);
+
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchDashboardData();
-        }
-    }, [isAdmin]);
+        fetchDashboardData();
+    }, []);
 
     const fetchDashboardData = async () => {
         try {
@@ -351,7 +345,7 @@ const Admin = () => {
         }
     };
 
-    if (authLoading || !isAdmin) return null;
+
 
     return (
         <div style={{

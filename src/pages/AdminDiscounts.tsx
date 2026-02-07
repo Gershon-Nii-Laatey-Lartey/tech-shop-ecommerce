@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import {
     Search,
     Plus,
@@ -10,7 +10,6 @@ import {
     X
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { useAuth } from '../contexts/AuthContext';
 import AdminSidebar from '../components/AdminSidebar';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -26,8 +25,6 @@ interface Discount {
 }
 
 const AdminDiscounts = () => {
-    const { isAdmin, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
     const [discounts, setDiscounts] = useState<Discount[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();
@@ -43,17 +40,11 @@ const AdminDiscounts = () => {
         expires_at: ''
     });
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            navigate('/');
-        }
-    }, [isAdmin, authLoading, navigate]);
+
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchDiscounts();
-        }
-    }, [isAdmin]);
+        fetchDiscounts();
+    }, []);
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -213,7 +204,7 @@ const AdminDiscounts = () => {
         d.code.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (authLoading || !isAdmin) return null;
+
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>

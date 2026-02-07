@@ -20,6 +20,8 @@ import AdminReviews from './pages/AdminReviews';
 import AdminSettings from './pages/AdminSettings';
 import HelpSupport from './pages/HelpSupport';
 import ContentPage from './pages/ContentPage';
+import NotFound from './pages/NotFound';
+import AdminRoute from './components/AdminRoute';
 import Navbar from './components/Navbar';
 import ScrollToTop from './components/ScrollToTop';
 import { AuthProvider } from './contexts/AuthContext';
@@ -41,15 +43,15 @@ const AppContent = () => {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/auth" element={<Auth />} />
-          <Route path="/admin" element={<Admin />} />
-          <Route path="/admin/products" element={<AdminProducts />} />
-          <Route path="/admin/categories" element={<AdminCategories />} />
-          <Route path="/admin/customers" element={<AdminCustomers />} />
-          <Route path="/admin/discounts" element={<AdminDiscounts />} />
-          <Route path="/admin/content" element={<AdminContent />} />
-          <Route path="/admin/analytics" element={<AdminAnalytics />} />
-          <Route path="/admin/reviews" element={<AdminReviews />} />
-          <Route path="/admin/settings" element={<AdminSettings />} />
+          <Route path="/admin" element={<AdminRoute><Admin /></AdminRoute>} />
+          <Route path="/admin/products" element={<AdminRoute><AdminProducts /></AdminRoute>} />
+          <Route path="/admin/categories" element={<AdminRoute><AdminCategories /></AdminRoute>} />
+          <Route path="/admin/customers" element={<AdminRoute><AdminCustomers /></AdminRoute>} />
+          <Route path="/admin/discounts" element={<AdminRoute><AdminDiscounts /></AdminRoute>} />
+          <Route path="/admin/content" element={<AdminRoute><AdminContent /></AdminRoute>} />
+          <Route path="/admin/analytics" element={<AdminRoute><AdminAnalytics /></AdminRoute>} />
+          <Route path="/admin/reviews" element={<AdminRoute><AdminReviews /></AdminRoute>} />
+          <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/profile" element={<Profile />} />
@@ -57,9 +59,10 @@ const AppContent = () => {
           <Route path="/checkout" element={<Checkout />} />
           <Route path="/orders" element={<Orders />} />
           <Route path="/orders/:id" element={<OrderTracking />} /> {/* New Route */}
-          <Route path="/admin/orders" element={<AdminOrders />} />
+          <Route path="/admin/orders" element={<AdminRoute><AdminOrders /></AdminRoute>} />
           <Route path="/support" element={<HelpSupport />} />
           <Route path="/page/:slug" element={<ContentPage />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
     </div>

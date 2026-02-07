@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
 import AdminSidebar from '../components/AdminSidebar';
 import {
@@ -15,8 +13,6 @@ import {
 const COLORS = ['#5544ff', '#10b981', '#f97316', '#8b5cf6', '#ec4899'];
 
 const AdminAnalytics = () => {
-    const { isAdmin, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
     const [stats, setStats] = useState({
         totalViews: 0,
         uniqueVisitors: 0,
@@ -26,19 +22,11 @@ const AdminAnalytics = () => {
         dailyTraffic: [] as any[]
     });
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) navigate('/');
-    }, [isAdmin, authLoading, navigate]);
-
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!authLoading && !isAdmin) navigate('/');
-    }, [isAdmin, authLoading, navigate]);
-
-    useEffect(() => {
-        if (isAdmin) fetchAnalytics();
-    }, [isAdmin]);
+        fetchAnalytics();
+    }, []);
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -168,7 +156,7 @@ const AdminAnalytics = () => {
         }
     };
 
-    if (authLoading || !isAdmin) return null;
+
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>

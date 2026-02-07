@@ -1,6 +1,4 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
 import AdminSidebar from '../components/AdminSidebar';
 import { Save, FileText, ChevronRight, CheckCircle2, AlertCircle } from 'lucide-react';
@@ -14,8 +12,6 @@ interface ContentPage {
 }
 
 const AdminContent = () => {
-    const { isAdmin, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
     const [pages, setPages] = useState<ContentPage[]>([]);
     const [selectedPage, setSelectedPage] = useState<ContentPage | null>(null);
     const [loading, setLoading] = useState(true);
@@ -23,11 +19,7 @@ const AdminContent = () => {
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
     const [showMobileEditor, setShowMobileEditor] = useState(false);
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            navigate('/');
-        }
-    }, [isAdmin, authLoading, navigate]);
+
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -117,10 +109,8 @@ const AdminContent = () => {
     }, [showMobileEditor]);
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchPages();
-        }
-    }, [isAdmin]);
+        fetchPages();
+    }, []);
 
     const fetchPages = async () => {
         try {
@@ -168,7 +158,7 @@ const AdminContent = () => {
         }
     };
 
-    if (authLoading || !isAdmin) return null;
+
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>

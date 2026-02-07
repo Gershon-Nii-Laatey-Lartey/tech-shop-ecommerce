@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Search,
@@ -15,7 +15,6 @@ import {
     ArrowUpRight
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
-import { useAuth } from '../contexts/AuthContext';
 import AdminSidebar from '../components/AdminSidebar';
 
 interface OrderItem {
@@ -38,19 +37,13 @@ interface Order {
 }
 
 const AdminOrders = () => {
-    const { isAdmin, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [searchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            navigate('/');
-        }
-    }, [isAdmin, authLoading, navigate]);
+
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -164,10 +157,8 @@ const AdminOrders = () => {
     }, []);
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchOrders();
-        }
-    }, [isAdmin]);
+        fetchOrders();
+    }, []);
 
     const fetchOrders = async () => {
         try {
@@ -236,7 +227,7 @@ const AdminOrders = () => {
         o.payment_ref?.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (authLoading || !isAdmin) return null;
+
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>

@@ -14,8 +14,6 @@ import {
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import AdminSidebar from '../components/AdminSidebar';
-import { useAuth } from '../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
 
 interface LogisticsZone {
     id: string;
@@ -31,8 +29,6 @@ interface LogisticsSettings {
 }
 
 const AdminLogistics = () => {
-    const { isAdmin, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
 
     // Settings State
     const [settings, setSettings] = useState<LogisticsSettings>({
@@ -52,18 +48,12 @@ const AdminLogistics = () => {
     const [newZoneName, setNewZoneName] = useState('');
     const [activeTab, setActiveTab] = useState<'infrastructure' | 'configuration'>('configuration');
 
-    useEffect(() => {
-        if (!authLoading && !isAdmin) {
-            navigate('/');
-        }
-    }, [isAdmin, authLoading, navigate]);
+
 
     useEffect(() => {
-        if (isAdmin) {
-            fetchSettings();
-            fetchZones(null);
-        }
-    }, [isAdmin]);
+        fetchSettings();
+        fetchZones(null);
+    }, []);
 
     const fetchSettings = async () => {
         const { data, error } = await supabase
@@ -163,7 +153,7 @@ const AdminLogistics = () => {
         }
     };
 
-    if (authLoading || !isAdmin) return null;
+
 
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>
