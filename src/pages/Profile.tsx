@@ -15,7 +15,8 @@ import {
     Trash2,
     Plus,
     X,
-    Home
+    Home,
+    LayoutDashboard
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
@@ -205,10 +206,18 @@ const Profile = () => {
                                 </div>
                             </div>
                         </div>
-                        <button onClick={handleSignOut} className="sign-out-btn">
-                            <LogOut size={18} />
-                            <span>Sign Out</span>
-                        </button>
+                        <div className="profile-actions">
+                            {profile?.role === 'admin' && (
+                                <button onClick={() => navigate('/admin')} className="admin-dashboard-btn">
+                                    <LayoutDashboard size={18} />
+                                    <span>Admin</span>
+                                </button>
+                            )}
+                            <button onClick={handleSignOut} className="sign-out-btn">
+                                <LogOut size={18} />
+                                <span>Sign Out</span>
+                            </button>
+                        </div>
                     </motion.div>
 
                     {/* Content Section */}
@@ -556,6 +565,34 @@ const Profile = () => {
 
                 .sign-out-btn:hover {
                     background: #FEE2E2;
+                }
+
+                .profile-actions {
+                    display: flex;
+                    gap: 12px;
+                    align-items: center;
+                }
+
+                .admin-dashboard-btn {
+                    padding: 12px 20px;
+                    background: #5544ff;
+                    color: white;
+                    border-radius: 12px;
+                    font-size: 14px;
+                    font-weight: 700;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    transition: all 0.2s;
+                    cursor: pointer;
+                    border: none;
+                    box-shadow: 0 4px 12px rgba(85, 68, 255, 0.2);
+                }
+
+                .admin-dashboard-btn:hover {
+                    background: #4338ca;
+                    transform: translateY(-2px);
+                    box-shadow: 0 6px 16px rgba(85, 68, 255, 0.3);
                 }
 
                 .profile-content-grid {
