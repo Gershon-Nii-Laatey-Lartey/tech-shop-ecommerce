@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
 import {
@@ -57,7 +57,6 @@ const FONT_FAMILY = "'Plus Jakarta Sans', 'Inter', sans-serif";
 
 const AdminProducts = () => {
     const { isAdmin, user, profile, loading: authLoading } = useAuth();
-    const navigate = useNavigate();
     const [products, setProducts] = useState<Product[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();

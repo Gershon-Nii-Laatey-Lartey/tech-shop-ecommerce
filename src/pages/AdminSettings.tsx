@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Truck,
     Save,
     Globe,
     Search,
@@ -10,9 +9,7 @@ import {
     ChevronRight,
     MapPin,
     AlertCircle,
-    CheckCircle2,
     Settings,
-    Layers,
     Map
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
