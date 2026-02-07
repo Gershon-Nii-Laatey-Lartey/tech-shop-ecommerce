@@ -96,12 +96,35 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
                 </div>
             </div>
 
-            <div style={{ padding: '20px 12px 12px' }}>
-                <p style={{ fontSize: '11px', color: '#aaa', fontWeight: 800, marginBottom: '6px', letterSpacing: '0.05em' }}>{(category || '').toUpperCase()}</p>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#1a1a1a', letterSpacing: '-0.02em' }}>{name}</h3>
-                    <p style={{ fontSize: '18px', color: '#1a1a1a', fontWeight: 800 }}>GH₵ {price}</p>
-                </div>
+            <div style={{ padding: '16px 8px 8px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p style={{
+                    fontSize: '10px',
+                    color: '#94A3B8',
+                    fontWeight: 800,
+                    margin: 0,
+                    letterSpacing: '0.05em'
+                }}>{(category || '').toUpperCase()}</p>
+
+                <h3 className="product-card-name" style={{
+                    fontSize: '16px',
+                    fontWeight: 700,
+                    color: '#0F172A',
+                    letterSpacing: '-0.02em',
+                    margin: 0,
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    minHeight: '2.6em'
+                }} title={name}>{name}</h3>
+
+                <p style={{
+                    fontSize: '16px',
+                    color: '#0F172A',
+                    fontWeight: 900,
+                    margin: 0
+                }}>GH₵ {price}</p>
             </div>
 
             <style>{`
@@ -122,11 +145,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ id, name, price, image, categ
                         padding: 16px !important;
                         border-radius: 16px !important;
                     }
-                    .product-card-premium h3 {
-                        font-size: 14px !important;
-                    }
-                    .product-card-premium p:last-child {
-                        font-size: 14px !important;
+                    .product-card-name {
+                        font-size: 13px !important;
+                        min-height: 2.6em !important;
                     }
                     .quick-add-btn {
                         display: none !important;

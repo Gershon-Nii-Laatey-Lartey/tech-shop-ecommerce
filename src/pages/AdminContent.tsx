@@ -21,12 +21,100 @@ const AdminContent = () => {
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+    const [showMobileEditor, setShowMobileEditor] = useState(false);
 
     useEffect(() => {
         if (!authLoading && !isAdmin) {
             navigate('/');
         }
     }, [isAdmin, authLoading, navigate]);
+
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+            
+            .admin-content-main {
+                margin-left: 260px;
+                padding: 40px;
+                transition: all 0.3s;
+            }
+
+            .content-grid {
+                display: grid;
+                grid-template-columns: 300px 1fr;
+                gap: 24px;
+                height: calc(100vh - 200px);
+            }
+
+            .pages-list {
+                display: flex;
+            }
+
+            .editor-panel {
+                display: flex;
+            }
+
+            .mobile-back-btn {
+                display: none;
+            }
+
+            @media (max-width: 1024px) {
+                .admin-content-main {
+                    margin-left: 0;
+                    padding: 0 24px 40px 24px;
+                    margin-top: 60px;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .admin-content-main {
+                    padding: 0 20px 100px 20px;
+                    margin-top: 60px;
+                }
+                .content-grid {
+                    display: flex;
+                    flex-direction: column;
+                    height: auto;
+                }
+                .pages-list {
+                    width: 100%;
+                    display: ${showMobileEditor ? 'none' : 'flex'};
+                }
+                .editor-panel {
+                    width: 100%;
+                    display: ${showMobileEditor ? 'flex' : 'none'};
+                    height: calc(100vh - 140px);
+                }
+                .mobile-back-btn {
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    font-size: 14px;
+                    font-weight: 700;
+                    color: #64748B;
+                    background: none;
+                    border: none;
+                    padding: 0;
+                    margin-bottom: 16px;
+                    cursor: pointer;
+                }
+                .page-header {
+                    flex-direction: column;
+                    align-items: flex-start !important;
+                    gap: 16px;
+                }
+                .save-btn {
+                    width: 100%;
+                    justify-content: center;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, [showMobileEditor]);
 
     useEffect(() => {
         if (isAdmin) {
@@ -86,7 +174,7 @@ const AdminContent = () => {
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>
             <AdminSidebar activeTab="Content" />
 
-            <main style={{ flex: 1, padding: '40px', marginLeft: '260px' }} className="admin-main-content">
+            <main className="admin-content-main" style={{ flex: 1 }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
                     <div style={{ marginBottom: '32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                         <div>
@@ -120,16 +208,19 @@ const AdminContent = () => {
                         </AnimatePresence>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr', gap: '24px', height: 'calc(100vh - 200px)' }}>
+                    <div className="content-grid">
                         {/* Sidebar: Pages List */}
-                        <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #F1F5F9', padding: '12px', overflowY: 'auto' }}>
+                        <div className="pages-list" style={{ background: '#fff', borderRadius: '24px', border: '1px solid #F1F5F9', padding: '12px', overflowY: 'auto', flexDirection: 'column' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                                 {loading ? (
                                     <div style={{ padding: '20px', textAlign: 'center', color: '#64748B' }}>Loading...</div>
                                 ) : pages.map(page => (
                                     <button
                                         key={page.slug}
-                                        onClick={() => setSelectedPage(page)}
+                                        onClick={() => {
+                                            setSelectedPage(page);
+                                            setShowMobileEditor(true);
+                                        }}
                                         style={{
                                             display: 'flex',
                                             alignItems: 'center',
@@ -155,17 +246,21 @@ const AdminContent = () => {
                         </div>
 
                         {/* Main: Editor */}
-                        <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #F1F5F9', display: 'flex', flexDirection: 'column' }}>
+                        <div className="editor-panel" style={{ background: '#fff', borderRadius: '24px', border: '1px solid #F1F5F9', flexDirection: 'column', overflow: 'hidden' }}>
                             {selectedPage ? (
                                 <>
-                                    <div style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <div className="page-header" style={{ padding: '24px', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <div>
+                                            <button className="mobile-back-btn" onClick={() => setShowMobileEditor(false)}>
+                                                <ChevronRight size={16} style={{ transform: 'rotate(180deg)' }} /> Back to Pages
+                                            </button>
                                             <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>{selectedPage.title}</h2>
                                             <p style={{ fontSize: '12px', color: '#94A3B8', marginTop: '4px' }}>
                                                 Last updated: {new Date(selectedPage.updated_at).toLocaleString()} • Markdown supported
                                             </p>
                                         </div>
                                         <button
+                                            className="save-btn"
                                             onClick={handleSave}
                                             disabled={saving}
                                             style={{
@@ -216,11 +311,7 @@ const AdminContent = () => {
                 </div>
             </main>
 
-            <style>{`
-                @media (max-width: 1024px) {
-                    .admin-main-content { margin-left: 0 !important; padding: 20px !important; }
-                }
-            `}</style>
+
         </div>
     );
 };

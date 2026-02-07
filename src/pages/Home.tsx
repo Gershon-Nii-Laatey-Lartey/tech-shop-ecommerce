@@ -12,6 +12,8 @@ interface Product {
     price: string;
     image: string;
     category: string;
+    rating?: number;
+    reviews_count?: number;
     is_new?: boolean;
 }
 

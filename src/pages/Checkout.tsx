@@ -27,17 +27,20 @@ interface Address {
     address_line: string;
     city: string;
     is_default: boolean;
+    zone_id?: string;
+    sub_zone_id?: string;
+    area_id?: string;
 }
 
 const DELIVERY_METHODS = [
-    { id: 'same-day', label: 'Same-day', price: 50, icon: <Zap size={18} />, desc: 'Delivery today' },
-    { id: 'express', label: 'Express', price: 30, icon: <Truck size={18} />, desc: '1-2 business days' },
-    { id: 'normal', label: 'Normal', price: 15, icon: <Clock size={18} />, desc: '3-5 business days' },
+    { id: 'normal', label: 'Normal', price: 0, icon: <Clock size={18} />, desc: '3-5 business days' },
+    { id: 'express', label: 'Express', price: 10, icon: <Truck size={18} />, desc: '1-2 business days' },
+    { id: 'same-day', label: 'Same-day', price: 15, icon: <Zap size={18} />, desc: 'Delivery today' },
 ];
 
 const Checkout = () => {
-    const { items, total, clearCart } = useCart();
-    const { user, profile } = useAuth();
+    const { selectedItems: items, total, clearCart } = useCart();
+    const { user, profile, loading: authLoading } = useAuth();
     const navigate = useNavigate();
 
     const [loading, setLoading] = useState(false);
@@ -46,7 +49,7 @@ const Checkout = () => {
     const [showAddressModal, setShowAddressModal] = useState(false);
     const [addresses, setAddresses] = useState<Address[]>([]);
     const [selectedAddress, setSelectedAddress] = useState<Address | null>(null);
-    const [deliveryMethod, setDeliveryMethod] = useState('express');
+    const [deliveryMethod, setDeliveryMethod] = useState('normal');
     const [isAddingNew, setIsAddingNew] = useState(false);
 
     // Discount State
@@ -60,14 +63,124 @@ const Checkout = () => {
         phone: '',
         address_line: '',
         city: '',
-        is_default: false
+        is_default: false,
+        zone_id: null as string | null,
+        sub_zone_id: null as string | null,
+        area_id: null as string | null
     });
 
+    const [logisticsSettings, setLogisticsSettings] = useState<any>(null);
+    const [zones, setZones] = useState<any[]>([]);
+    const [subZones, setSubZones] = useState<any[]>([]);
+    const [areas, setAreas] = useState<any[]>([]);
+    const [fetchingLogistics, setFetchingLogistics] = useState(false);
+    const [customDeliveryFee, setCustomDeliveryFee] = useState<number | null>(null);
+
     useEffect(() => {
-        if (user) {
-            fetchAddresses();
+        if (authLoading) return;
+
+        if (!user) {
+            navigate('/auth?redirect=checkout');
+            return;
         }
-    }, [user]);
+        fetchAddresses();
+        fetchLogisticsConfig();
+    }, [user, navigate, authLoading]);
+
+    const fetchLogisticsConfig = async () => {
+        const { data } = await supabase
+            .from('admin_settings')
+            .select('*')
+            .eq('key', 'logistics_config')
+            .single();
+        if (data) setLogisticsSettings(data.value);
+
+        // Fetch root zones
+        const { data: rootZones } = await supabase
+            .from('logistics_zones')
+            .select('*')
+            .is('parent_id', null);
+        if (rootZones) setZones(rootZones);
+    };
+
+    const fetchSubZones = async (parentId: string) => {
+        const { data } = await supabase
+            .from('logistics_zones')
+            .select('*')
+            .eq('parent_id', parentId);
+        return data || [];
+    };
+
+    const handleZoneChange = async (zoneId: string) => {
+        setNewAddress({ ...newAddress, zone_id: zoneId, sub_zone_id: null, area_id: null });
+        const data = await fetchSubZones(zoneId);
+        setSubZones(data);
+        setAreas([]);
+    };
+
+    const handleSubZoneChange = async (subZoneId: string) => {
+        setNewAddress({ ...newAddress, sub_zone_id: subZoneId, area_id: null });
+        const data = await fetchSubZones(subZoneId);
+        setAreas(data);
+    };
+
+    const handleAreaChange = (areaId: string, areaName: string) => {
+        setNewAddress({ ...newAddress, area_id: areaId, city: areaName });
+    };
+
+    const calculateDynamicFee = async (address: any) => {
+        if (!logisticsSettings?.is_enabled || !logisticsSettings?.api_endpoint) {
+            setCustomDeliveryFee(null);
+            return;
+        }
+
+        setFetchingLogistics(true);
+        try {
+            let zName = address.zone_name;
+            let szName = address.sub_zone_name;
+            let aName = address.area_name;
+
+            // If names aren't in the object, fetch them by ID
+            if (!zName || !szName || !aName) {
+                const { data: zoneData } = await supabase
+                    .from('logistics_zones')
+                    .select('id, name')
+                    .in('id', [address.zone_id, address.sub_zone_id, address.area_id]);
+
+                if (zoneData) {
+                    zName = zoneData.find(z => z.id === address.zone_id)?.name;
+                    szName = zoneData.find(z => z.id === address.sub_zone_id)?.name;
+                    aName = zoneData.find(z => z.id === address.area_id)?.name;
+                }
+            }
+
+            const response = await fetch(logisticsSettings.api_endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    location: { zone: zName, sub_zone: szName, area: aName },
+                    cart_total: total,
+                    items_weight: items.reduce((acc, item) => acc + (item.weight || 0) * item.quantity, 0)
+                })
+            });
+            const data = await response.json();
+            if (data.delivery_fee !== undefined) {
+                setCustomDeliveryFee(data.delivery_fee);
+            }
+        } catch (err) {
+            console.error('Error fetching delivery fee:', err);
+            setCustomDeliveryFee(null);
+        } finally {
+            setFetchingLogistics(false);
+        }
+    };
+
+    // Auto-calculate fee when selected address changes
+    useEffect(() => {
+        if (selectedAddress && logisticsSettings) {
+            calculateDynamicFee(selectedAddress);
+        }
+    }, [selectedAddress, logisticsSettings]);
 
     const fetchAddresses = async () => {
         const { data, error } = await supabase
@@ -81,24 +194,69 @@ const Checkout = () => {
         }
     };
 
+    const toggleDefaultAddress = async (addressId: string) => {
+        try {
+            // Unset all as default for this user
+            await supabase
+                .from('shipping_addresses')
+                .update({ is_default: false })
+                .eq('user_id', user?.id);
+
+            // Set the target as default
+            const { error } = await supabase
+                .from('shipping_addresses')
+                .update({ is_default: true })
+                .eq('id', addressId);
+
+            if (!error) {
+                fetchAddresses();
+            }
+        } catch (err) {
+            console.error('Error toggling default address:', err);
+        }
+    };
+
     const handleAddAddress = async () => {
-        if (!newAddress.address_line || !newAddress.phone || !newAddress.city) {
-            alert('Please fill in all address details');
+        if (!newAddress.address_line || !newAddress.phone || !newAddress.city || !newAddress.zone_id) {
+            alert('Please fill in all address details and select a location');
             return;
         }
 
         setLoading(true);
-        const { data, error } = await supabase
-            .from('shipping_addresses')
-            .insert([{ ...newAddress, user_id: user?.id }])
-            .select()
-            .single();
+        try {
+            // If new address is default, unset others first
+            if (newAddress.is_default) {
+                await supabase
+                    .from('shipping_addresses')
+                    .update({ is_default: false })
+                    .eq('user_id', user?.id);
+            }
 
-        setLoading(false);
-        if (!error && data) {
-            setAddresses([data, ...addresses]);
-            setSelectedAddress(data);
-            setIsAddingNew(false);
+            const { data, error } = await supabase
+                .from('shipping_addresses')
+                .insert([{ ...newAddress, user_id: user?.id }])
+                .select()
+                .single();
+
+            if (!error && data) {
+                setAddresses([data, ...addresses.map(a => newAddress.is_default ? { ...a, is_default: false } : a)]);
+                setSelectedAddress(data);
+                setIsAddingNew(false);
+                setNewAddress({
+                    full_name: profile?.full_name || '',
+                    phone: '',
+                    address_line: '',
+                    city: '',
+                    is_default: false,
+                    zone_id: null,
+                    sub_zone_id: null,
+                    area_id: null
+                });
+            }
+        } catch (err) {
+            console.error('Error adding address:', err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -129,7 +287,9 @@ const Checkout = () => {
         }
     };
 
-    const deliveryPrice = DELIVERY_METHODS.find(m => m.id === deliveryMethod)?.price || 0;
+    const baseLogisticsFee = customDeliveryFee !== null ? customDeliveryFee : 0;
+    const speedPremium = DELIVERY_METHODS.find(m => m.id === deliveryMethod)?.price || 0;
+    const deliveryPrice = baseLogisticsFee + speedPremium;
 
     // Calculate totals
     const subtotal = total;
@@ -206,7 +366,8 @@ const Checkout = () => {
                     reference: response.reference,
                     deliveryMethodId: deliveryMethod,
                     addressId: selectedAddress?.id || null,
-                    discountCode: appliedDiscount?.code || null
+                    discountCode: appliedDiscount?.code || null,
+                    selectedItemIds: items.map(i => i.id) // Pass selected IDs to backend if needed
                 },
                 headers: {
                     Authorization: `Bearer ${session.access_token}`
@@ -319,7 +480,7 @@ const Checkout = () => {
                                 {/* Discount Section */}
                                 <div style={{ marginBottom: '20px' }}>
                                     <h3 style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>Discount Code</h3>
-                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                    <div className="discount-input-container" style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                                         <input
                                             type="text"
                                             value={discountCode}
@@ -468,7 +629,9 @@ const Checkout = () => {
                                         >
                                             <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', color: deliveryMethod === method.id ? '#5544ff' : '#64748B' }}>
                                                 {method.icon}
-                                                <span style={{ fontSize: '12px', fontWeight: 900 }}>GH₵ {method.price}</span>
+                                                <span style={{ fontSize: '12px', fontWeight: 900 }}>
+                                                    GH₵ {(baseLogisticsFee + method.price).toFixed(2)}
+                                                </span>
                                             </div>
                                             <div>
                                                 <p style={{ margin: 0, fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>{method.label}</p>
@@ -497,15 +660,48 @@ const Checkout = () => {
                                 {!isAddingNew ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                                         {addresses.map(addr => (
-                                            <button
+                                            <div
                                                 key={addr.id}
-                                                onClick={() => { setSelectedAddress(addr); setShowAddressModal(false); }}
-                                                style={{ textAlign: 'left', padding: '16px', borderRadius: '16px', border: '1px solid', borderColor: selectedAddress?.id === addr.id ? '#5544ff' : '#E2E8F0', background: selectedAddress?.id === addr.id ? '#F5F5FF' : '#fff', cursor: 'pointer' }}
+                                                style={{
+                                                    padding: '16px',
+                                                    borderRadius: '20px',
+                                                    border: '1px solid',
+                                                    borderColor: selectedAddress?.id === addr.id ? '#5544ff' : '#E2E8F0',
+                                                    background: selectedAddress?.id === addr.id ? '#F5F5FF' : '#fff',
+                                                    cursor: 'pointer',
+                                                    transition: 'all 0.2s',
+                                                    position: 'relative'
+                                                }}
+                                                onClick={() => {
+                                                    setSelectedAddress(addr);
+                                                    setShowAddressModal(false);
+                                                }}
                                             >
-                                                <p style={{ margin: 0, fontWeight: 800, fontSize: '14px' }}>{addr.full_name}</p>
-                                                <p style={{ margin: '4px 0', fontSize: '12px', color: '#64748B' }}>{addr.address_line}, {addr.city}</p>
-                                                <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>{addr.phone}</p>
-                                            </button>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '8px' }}>
+                                                    <div>
+                                                        <p style={{ margin: 0, fontWeight: 800, fontSize: '14px', color: '#0F172A' }}>{addr.full_name}</p>
+                                                        {addr.is_default && (
+                                                            <span style={{ fontSize: '10px', background: '#5544ff', color: '#fff', padding: '2px 6px', borderRadius: '4px', fontWeight: 800, marginTop: '4px', display: 'inline-block' }}>DEFAULT</span>
+                                                        )}
+                                                    </div>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); toggleDefaultAddress(addr.id); }}
+                                                        style={{
+                                                            fontSize: '11px',
+                                                            fontWeight: 800,
+                                                            color: addr.is_default ? '#64748B' : '#5544ff',
+                                                            background: 'none',
+                                                            border: 'none',
+                                                            cursor: addr.is_default ? 'default' : 'pointer'
+                                                        }}
+                                                        disabled={addr.is_default}
+                                                    >
+                                                        {addr.is_default ? 'Default Address' : 'Make Default'}
+                                                    </button>
+                                                </div>
+                                                <p style={{ margin: '4px 0', fontSize: '12px', color: '#64748B', fontWeight: 500 }}>{addr.address_line}</p>
+                                                <p style={{ margin: 0, fontSize: '12px', color: '#64748B', fontWeight: 500 }}>{addr.city}, {addr.phone}</p>
+                                            </div>
                                         ))}
                                         <button
                                             onClick={() => setIsAddingNew(true)}
@@ -529,9 +725,76 @@ const Checkout = () => {
                                             <input type="text" value={newAddress.address_line} onChange={e => setNewAddress({ ...newAddress, address_line: e.target.value })} placeholder="House No, Street Name" />
                                         </div>
                                         <div className="modal-input">
-                                            <label>City</label>
-                                            <input type="text" value={newAddress.city} onChange={e => setNewAddress({ ...newAddress, city: e.target.value })} placeholder="e.g. Accra" />
+                                            <label>Zone / Region</label>
+                                            <select
+                                                value={newAddress.zone_id || ''}
+                                                onChange={e => handleZoneChange(e.target.value)}
+                                                style={{ width: '100%', height: '48px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '0 16px', fontSize: '14px', fontWeight: 700, outline: 'none' }}
+                                            >
+                                                <option value="">Select Zone</option>
+                                                {zones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                                            </select>
                                         </div>
+
+                                        <div className="modal-input" style={{ opacity: newAddress.zone_id ? 1 : 0.5 }}>
+                                            <label>Sub-Zone / District</label>
+                                            <select
+                                                disabled={!newAddress.zone_id}
+                                                value={newAddress.sub_zone_id || ''}
+                                                onChange={e => handleSubZoneChange(e.target.value)}
+                                                style={{ width: '100%', height: '48px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '0 16px', fontSize: '14px', fontWeight: 700, outline: 'none' }}
+                                            >
+                                                <option value="">Select Sub-Zone</option>
+                                                {subZones.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                                            </select>
+                                        </div>
+
+                                        <div className="modal-input" style={{ opacity: newAddress.sub_zone_id ? 1 : 0.5 }}>
+                                            <label>Area / Neighborhood</label>
+                                            <select
+                                                disabled={!newAddress.sub_zone_id}
+                                                value={newAddress.area_id || ''}
+                                                onChange={e => {
+                                                    const selected = areas.find(a => a.id === e.target.value);
+                                                    if (selected) {
+                                                        handleAreaChange(selected.id, selected.name);
+                                                        calculateDynamicFee({ ...newAddress, area_id: selected.id });
+                                                    }
+                                                }}
+                                                style={{ width: '100%', height: '48px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '0 16px', fontSize: '14px', fontWeight: 700, outline: 'none' }}
+                                            >
+                                                <option value="">Select Area</option>
+                                                {areas.map(z => <option key={z.id} value={z.id}>{z.name}</option>)}
+                                            </select>
+                                        </div>
+
+                                        {fetchingLogistics && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#5544ff', fontSize: '12px', fontWeight: 700 }}>
+                                                <Loader2 className="animate-spin" size={14} /> Calculating delivery rates...
+                                            </div>
+                                        )}
+
+                                        {customDeliveryFee !== null && (
+                                            <div style={{ background: '#F5F5FF', padding: '12px', borderRadius: '12px', border: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                    <Truck size={16} color="#5544ff" />
+                                                    <span style={{ fontSize: '13px', fontWeight: 700 }}>Logistics Fee</span>
+                                                </div>
+                                                <span style={{ fontSize: '14px', fontWeight: 900, color: '#5544ff' }}>GH₵ {customDeliveryFee.toFixed(2)}</span>
+                                            </div>
+                                        )}
+
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 4px' }}>
+                                            <input
+                                                type="checkbox"
+                                                id="set-default"
+                                                checked={newAddress.is_default}
+                                                onChange={e => setNewAddress({ ...newAddress, is_default: e.target.checked })}
+                                                style={{ width: '18px', height: '18px', cursor: 'pointer' }}
+                                            />
+                                            <label htmlFor="set-default" style={{ fontSize: '14px', fontWeight: 700, color: '#0F172A', cursor: 'pointer' }}>Set as default address</label>
+                                        </div>
+
                                         <button onClick={handleAddAddress} style={{ width: '100%', height: '52px', background: '#0F172A', color: '#fff', borderRadius: '16px', fontWeight: 800, marginTop: '8px', border: 'none', cursor: 'pointer' }}>Save Address</button>
                                         <button onClick={() => setIsAddingNew(false)} style={{ width: '100%', height: '52px', color: '#64748B', fontWeight: 800, background: 'none', border: 'none', cursor: 'pointer' }}>Cancel</button>
                                     </div>
@@ -551,6 +814,8 @@ const Checkout = () => {
                 @media (max-width: 800px) {
                     .checkout-grid { flex-direction: column-reverse; }
                     .order-summary-col { width: 100% !important; }
+                    .discount-input-container input { min-width: 120px !important; }
+                    .discount-input-container button { flex: 1 !important; }
                 }
             `}</style>
         </div>

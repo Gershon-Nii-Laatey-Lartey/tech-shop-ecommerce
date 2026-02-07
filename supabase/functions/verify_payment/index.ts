@@ -127,7 +127,11 @@ serve(async (req) => {
         // Fetch cart
         const { data: cartItems, error: cartError } = await supabaseClient
             .from('cart_items')
-            .select('*, products(price, name, image)')
+            .select(`
+                *,
+                products(price, name, image),
+                product_variants(name, value, price_modifier)
+            `)
             .eq('user_id', user.id)
 
         if (cartError || !cartItems || cartItems.length === 0) {
@@ -168,13 +172,21 @@ serve(async (req) => {
 
         // 5. Create Order Items
         if (cartItems && cartItems.length > 0) {
-            const orderItemsData = cartItems.map((item: any) => ({
-                order_id: order.id,
-                product_id: item.product_id,
-                product_name: item.products.name,
-                quantity: item.quantity,
-                price: item.products.price
-            }))
+            const orderItemsData = cartItems.map((item: any) => {
+                const basePrice = parseFloat(item.products.price);
+                const modifier = item.product_variants ? parseFloat(item.product_variants.price_modifier) : 0;
+                const totalItemPrice = basePrice + modifier;
+
+                return {
+                    order_id: order.id,
+                    product_id: item.product_id,
+                    variant_id: item.variant_id,
+                    variant_name: item.product_variants ? `${item.product_variants.name}: ${item.product_variants.value}` : null,
+                    product_name: item.products.name,
+                    quantity: item.quantity,
+                    price: totalItemPrice
+                };
+            })
 
             const { error: itemsError } = await supabaseClient
                 .from('order_items')

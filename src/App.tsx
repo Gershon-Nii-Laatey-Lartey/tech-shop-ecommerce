@@ -17,6 +17,7 @@ import AdminDiscounts from './pages/AdminDiscounts';
 import AdminContent from './pages/AdminContent';
 import AdminAnalytics from './pages/AdminAnalytics';
 import AdminReviews from './pages/AdminReviews';
+import AdminSettings from './pages/AdminSettings';
 import HelpSupport from './pages/HelpSupport';
 import ContentPage from './pages/ContentPage';
 import Navbar from './components/Navbar';
@@ -48,6 +49,7 @@ const AppContent = () => {
           <Route path="/admin/content" element={<AdminContent />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/reviews" element={<AdminReviews />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/cart" element={<Cart />} />
           <Route path="/profile" element={<Profile />} />

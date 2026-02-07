@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../supabaseClient';
 import { Mail, Lock, User, ArrowRight } from 'lucide-react';
@@ -12,11 +12,15 @@ const Auth = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleAuth = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError('');
+
+        const params = new URLSearchParams(location.search);
+        const redirect = params.get('redirect') || '/';
 
         try {
             if (isLogin) {
@@ -25,7 +29,7 @@ const Auth = () => {
                     password,
                 });
                 if (signInError) throw signInError;
-                navigate('/');
+                navigate(redirect.startsWith('/') ? redirect : `/${redirect}`);
             } else {
                 const { error: signUpError } = await supabase.auth.signUp({
                     email,

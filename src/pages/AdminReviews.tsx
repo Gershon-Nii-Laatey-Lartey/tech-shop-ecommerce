@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../supabaseClient';
 import { motion } from 'framer-motion';
@@ -31,13 +31,87 @@ const AdminReviews = () => {
     const navigate = useNavigate();
     const [reviews, setReviews] = useState<Review[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchParams] = useSearchParams();
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
 
     useEffect(() => {
         if (!authLoading && !isAdmin) {
             navigate('/');
         }
     }, [isAdmin, authLoading, navigate]);
+
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+            
+            .admin-reviews-main {
+                margin-left: 260px;
+                padding: 40px;
+                transition: all 0.3s;
+            }
+
+            .reviews-header {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                padding: 24px 0;
+                position: sticky;
+                top: 0;
+                background: #F8FAFC;
+                z-index: 40;
+                gap: 20px;
+                border-bottom: 1px solid rgba(0,0,0,0.05);
+                margin-bottom: 32px;
+            }
+
+            .reviews-grid {
+                 display: grid;
+                 grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+                 gap: 20px;
+            }
+
+            @media (max-width: 1024px) {
+                .admin-reviews-main {
+                    margin-left: 0;
+                    padding: 0 24px 40px 24px;
+                    margin-top: 60px;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .admin-reviews-main {
+                    padding: 0 20px 100px 20px;
+                    margin-top: 60px;
+                }
+                .reviews-header {
+                    flex-direction: column-reverse;
+                    align-items: flex-start;
+                    gap: 16px;
+                    padding: 16px 0;
+                    position: relative; /* Unstick on mobile to save space */
+                }
+                .search-container {
+                    width: 100%;
+                    max-width: none !important;
+                }
+                .header-profile {
+                    width: 100%;
+                    justify-content: flex-end;
+                }
+                .reviews-grid {
+                    grid-template-columns: 1fr;
+                }
+                .hide-mobile {
+                    display: none;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
 
     useEffect(() => {
         if (isAdmin) {
@@ -101,21 +175,9 @@ const AdminReviews = () => {
         }}>
             <AdminSidebar activeTab="Reviews" />
 
-            <div className="admin-main-content" style={{ flex: 1, position: 'relative' }}>
-                <header style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '24px 0',
-                    position: 'sticky',
-                    top: 0,
-                    background: '#F8FAFC',
-                    zIndex: 40,
-                    gap: '20px',
-                    borderBottom: '1px solid rgba(0,0,0,0.05)',
-                    marginBottom: '32px'
-                }}>
-                    <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+            <div className="admin-reviews-main" style={{ flex: 1, position: 'relative' }}>
+                <header className="reviews-header">
+                    <div className="search-container" style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
                         <Search size={18} color="#64748b" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
                         <input
                             type="search"
@@ -134,9 +196,55 @@ const AdminReviews = () => {
                                 transition: 'all 0.2s'
                             }}
                         />
+                        {searchTerm && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                right: 0,
+                                background: 'white',
+                                borderRadius: '12px',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                zIndex: 50,
+                                marginTop: '4px',
+                                border: '1px solid #E2E8F0',
+                                maxHeight: '300px',
+                                overflowY: 'auto'
+                            }}>
+                                {filteredReviews.slice(0, 5).map(review => (
+                                    <div
+                                        key={review.id}
+                                        onClick={() => setSearchTerm(review.products?.name || '')}
+                                        style={{
+                                            padding: '12px 16px',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            cursor: 'pointer',
+                                            borderBottom: '1px solid #F1F5F9'
+                                        }}
+                                        onMouseEnter={(e) => e.currentTarget.style.background = '#F8FAFC'}
+                                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                    >
+                                        <img src={review.products?.image} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'contain', background: '#F8FAFC' }} />
+                                        <div style={{ flex: 1, overflow: 'hidden' }}>
+                                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{review.products?.name}</div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <Star size={10} fill="#F59E0B" stroke="#F59E0B" />
+                                                <span style={{ fontSize: '12px', fontWeight: 700, color: '#0F172A' }}>{review.rating}</span>
+                                                <span style={{ fontSize: '12px', color: '#94A3B8' }}>• {review.profiles?.full_name || 'User'}</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ))}
+                                {filteredReviews.length === 0 && (
+                                    <div style={{ padding: '12px 16px', color: '#64748B', fontSize: '14px' }}>No reviews found</div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                    <div className="header-profile" style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
                         <div style={{ textAlign: 'right' }} className="hide-mobile">
                             <p style={{ fontSize: '14px', fontWeight: 700 }}>{profile?.full_name || 'Admin'}</p>
                             <p style={{ fontSize: '12px', color: '#64748b' }}>Store Manager</p>
@@ -165,7 +273,7 @@ const AdminReviews = () => {
                         <p style={{ color: '#64748B' }}>Wait for customers to leave some feedback!</p>
                     </div>
                 ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))', gap: '20px' }}>
+                    <div className="reviews-grid">
                         {filteredReviews.map((review) => (
                             <motion.div
                                 key={review.id}
@@ -234,7 +342,7 @@ const AdminReviews = () => {
                     </div>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 

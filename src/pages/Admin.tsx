@@ -10,7 +10,16 @@ import {
     MoreHorizontal,
     Users,
     Layers,
-    ShoppingCart
+    ShoppingCart,
+    Package,
+    Compass,
+    Inbox,
+    FolderTree,
+    ImageIcon,
+    BarChart3,
+    Percent,
+    Settings,
+    MessageSquare
 } from 'lucide-react';
 import AdminSidebar from '../components/AdminSidebar';
 import {
@@ -51,6 +60,19 @@ interface DashboardStats {
     repeatRate: number;
 }
 
+const ADMIN_FEATURES = [
+    { title: 'Dashboard', path: '/admin', icon: <Compass size={18} color="#5544ff" />, description: 'Overview and key metrics' },
+    { title: 'Orders', path: '/admin/orders', icon: <Inbox size={18} color="#10b981" />, description: 'Manage orders and shipments' },
+    { title: 'Products', path: '/admin/products', icon: <Package size={18} color="#f97316" />, description: 'Inventory, pricing, and stock' },
+    { title: 'Categories', path: '/admin/categories', icon: <FolderTree size={18} color="#8b5cf6" />, description: 'Organize product categories' },
+    { title: 'Customers', path: '/admin/customers', icon: <Users size={18} color="#0ea5e9" />, description: 'Customer profiles and history' },
+    { title: 'Content', path: '/admin/content', icon: <ImageIcon size={18} color="#ec4899" />, description: 'Manage site banners and text' },
+    { title: 'Analytics', path: '/admin/analytics', icon: <BarChart3 size={18} color="#f59e0b" />, description: 'Detailed traffic and sales reports' },
+    { title: 'Discounts', path: '/admin/discounts', icon: <Percent size={18} color="#6366f1" />, description: 'Create coupons and offers' },
+    { title: 'Reviews', path: '/admin/reviews', icon: <MessageSquare size={18} color="#ef4444" />, description: 'Moderate user reviews' },
+    { title: 'Settings', path: '/admin/settings', icon: <Settings size={18} color="#64748b" />, description: 'System configuration' },
+];
+
 // --- MOCK DATA FOR GRAPHS ---
 const radialData = (value: number) => [
     {
@@ -85,6 +107,28 @@ const Admin = () => {
         repeatRate: 0
     });
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+
+    // Feature Search Logic
+    useEffect(() => {
+        if (!searchTerm) {
+            setSearchResults([]);
+            return;
+        }
+
+        const term = searchTerm.toLowerCase();
+        const results = ADMIN_FEATURES.filter(feature =>
+            feature.title.toLowerCase().includes(term) ||
+            feature.description.toLowerCase().includes(term)
+        );
+        setSearchResults(results);
+    }, [searchTerm]);
+
+    const handleResultClick = (item: any) => {
+        navigate(item.path);
+        setSearchTerm('');
+    };
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -102,12 +146,73 @@ const Admin = () => {
                 background-color: #CBD5E1 !important;
                 border-radius: 10px !important;
             }
-            *::-webkit-scrollbar-button {
-                display: none !important;
+            
+            .admin-main-content {
+                padding: 0 32px 40px 32px;
+                transition: padding 0.3s;
             }
-            * {
-                scrollbar-width: thin !important;
-                scrollbar-color: #CBD5E1 transparent !important;
+
+            @media (max-width: 1024px) {
+                .admin-main-content {
+                    padding: 0 24px 40px 24px;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .admin-main-content {
+                    padding: 0 20px 100px 20px !important;
+                    margin-top: 60px !important;
+                }
+                .main-header-sticky {
+                    top: 0 !important;
+                    z-index: 40 !important;
+                    margin-bottom: 0 !important;
+                    padding: 12px 0 16px 0 !important;
+                }
+                .hide-mobile {
+                    display: none !important;
+                }
+                .stat-grid {
+                    grid-template-columns: repeat(2, 1fr) !important;
+                    gap: 12px !important;
+                }
+                .main-dashboard-grid {
+                    grid-template-columns: 1fr !important;
+                    gap: 16px !important;
+                }
+                .dashboard-card-inner {
+                    padding: 16px !important;
+                }
+                header {
+                    padding: 12px 0 !important;
+                    margin-bottom: 8px !important;
+                    background: rgba(248, 250, 252, 0.9) !important;
+                    backdrop-filter: blur(10px) !important;
+                    border-bottom: 1px solid rgba(226, 232, 240, 0.4);
+                }
+                .dashboard-title {
+                    font-size: 22px !important;
+                    margin-bottom: 16px !important;
+                }
+            }
+
+            @media (max-width: 480px) {
+                .stat-grid {
+                    gap: 8px !important;
+                }
+                .stat-card-padding {
+                    padding: 16px !important;
+                }
+            }
+
+            .skeleton {
+                background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%);
+                background-size: 200% 100%;
+                animation: loading 1.5s infinite;
+            }
+            @keyframes loading {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
             }
         `;
         document.head.appendChild(style);
@@ -130,17 +235,26 @@ const Admin = () => {
             setLoading(true);
             const { data: orderItems, error: itemsError } = await supabase
                 .from('order_items')
-                .select('product_id, product_name, quantity, price');
+                .select(`
+                    product_id, 
+                    product_name, 
+                    quantity, 
+                    price,
+                    products (image, rating)
+                `);
 
             if (itemsError) throw itemsError;
 
-            const productAggregates = (orderItems || []).reduce((acc: any, item) => {
+            const productAggregates = (orderItems || []).reduce((acc: any, item: any) => {
                 if (!acc[item.product_id]) {
+                    const prod = Array.isArray(item.products) ? item.products[0] : item.products;
                     acc[item.product_id] = {
                         id: item.product_id,
                         name: item.product_name,
                         sold_count: 0,
-                        revenue: 0
+                        revenue: 0,
+                        image: prod?.image || '',
+                        rating: prod?.rating || 4.8
                     };
                 }
                 acc[item.product_id].sold_count += item.quantity;
@@ -152,20 +266,6 @@ const Admin = () => {
                 .sort((a: any, b: any) => b.sold_count - a.sold_count)
                 .slice(0, 5) as Product[];
 
-            if (sortedProducts.length > 0) {
-                const { data: pImages } = await supabase
-                    .from('products')
-                    .select('id, image, rating')
-                    .in('id', sortedProducts.map(p => p.id));
-
-                sortedProducts.forEach(p => {
-                    const found = pImages?.find(img => img.id === p.id);
-                    if (found) {
-                        p.image = found.image;
-                        p.rating = found.rating || 4.8;
-                    }
-                });
-            }
             setProducts(sortedProducts);
 
             const { data: ordersData, error: ordersError } = await supabase
@@ -263,8 +363,8 @@ const Admin = () => {
         }}>
             <AdminSidebar activeTab="Dashboard" />
 
-            <div className="admin-main-content" style={{ flex: 1, position: 'relative' }}>
-                <header style={{
+            <div className="admin-main-content" style={{ flex: 1, position: 'relative', width: '100%', overflowX: 'hidden' }}>
+                <header className="main-header-sticky" style={{
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
@@ -272,53 +372,114 @@ const Admin = () => {
                     position: 'sticky',
                     top: 0,
                     background: '#F8FAFC',
-                    zIndex: 40,
-                    gap: '20px',
-                    flexWrap: 'wrap'
+                    zIndex: 100,
+                    gap: '16px',
+                    marginRight: '-4px'
                 }}>
-                    <div style={{ position: 'relative', flex: 1, minWidth: '200px', maxWidth: '400px' }}>
-                        <Search size={18} color="#000000" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <div style={{ position: 'relative', flex: 1, maxWidth: '480px' }}>
+                        <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
                         <input
                             type="text"
-                            placeholder="Search anything..."
+                            placeholder="Search features or pages..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             style={{
                                 width: '100%',
                                 padding: '12px 16px 12px 48px',
                                 background: '#ffffff',
-                                border: '1px solid #E2E8F0',
-                                borderRadius: '12px',
-                                fontSize: '16px',
+                                border: '1.5px solid #F1F5F9',
+                                borderRadius: '14px',
+                                fontSize: '14px',
                                 outline: 'none',
-                                fontWeight: 500,
-                                color: '#000000'
+                                fontWeight: 600,
+                                color: '#0F172A',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
                             }}
                         />
+                        {searchTerm && (
+                            <div style={{
+                                position: 'absolute',
+                                top: '100%',
+                                left: 0,
+                                right: 0,
+                                background: 'white',
+                                borderRadius: '12px',
+                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                zIndex: 1000,
+                                marginTop: '4px',
+                                border: '1px solid #E2E8F0',
+                                maxHeight: '400px',
+                                overflowY: 'auto'
+                            }}>
+                                {searchResults.length > 0 ? (
+                                    searchResults.map((item, idx) => (
+                                        <div
+                                            key={item.path}
+                                            onClick={() => handleResultClick(item)}
+                                            style={{
+                                                padding: '12px 16px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '12px',
+                                                cursor: 'pointer',
+                                                borderBottom: idx === searchResults.length - 1 ? 'none' : '1px solid #F1F5F9'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = '#F8FAFC'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                        >
+                                            <div style={{
+                                                width: '36px', height: '36px', borderRadius: '8px',
+                                                background: '#EEF2FF',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
+                                            }}>
+                                                {item.icon}
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>
+                                                    {item.title}
+                                                </div>
+                                                <div style={{ fontSize: '12px', color: '#64748B' }}>
+                                                    {item.description}
+                                                </div>
+                                            </div>
+                                            <div style={{ marginLeft: 'auto', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', color: '#94A3B8', background: '#F1F5F9', padding: '2px 6px', borderRadius: '4px' }}>
+                                                Page
+                                            </div>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <div style={{ padding: '16px', textAlign: 'center', color: '#64748B', fontSize: '14px' }}>
+                                        No results found for "{searchTerm}"
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <div className="hide-mobile" style={{ display: 'flex', gap: '12px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <div className="hide-mobile" style={{ display: 'flex', gap: '8px' }}>
                             <NavIconButton icon={<Sun size={18} />} />
                             <NavIconButton icon={<Bell size={18} />} badge />
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginLeft: '4px' }}>
                             <div style={{ textAlign: 'right' }} className="hide-mobile">
-                                <p style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a' }}>{profile?.full_name || 'Admin'}</p>
-                                <p style={{ fontSize: '12px', color: '#64748b', fontWeight: 500 }}>Global Admin</p>
+                                <p style={{ fontSize: '13px', fontWeight: 800, color: '#0F172A', lineHeight: 1 }}>{profile?.full_name || 'Admin'}</p>
+                                <p style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 700, marginTop: '4px' }}>Administrator</p>
                             </div>
                             <img
                                 src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
                                 alt="avatar"
-                                style={{ width: '40px', height: '40px', borderRadius: '12px', border: '2px solid white', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
+                                style={{ width: '38px', height: '38px', borderRadius: '12px', border: '2px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', objectFit: 'cover' }}
                             />
                         </div>
                     </div>
                 </header>
 
-                <h2 style={{ fontSize: '28px', fontWeight: 800, marginBottom: '24px', letterSpacing: '-0.02em', color: '#0f172a' }}>Dashboard</h2>
+                <h2 className="dashboard-title" style={{ fontSize: '28px', fontWeight: 900, marginBottom: '24px', letterSpacing: '-0.03em', color: '#0F172A' }}>Dashboard</h2>
 
-                <div style={{
+                <div className="stat-grid" style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                    gridTemplateColumns: 'repeat(4, 1fr)',
                     gap: '24px',
                     marginBottom: '24px'
                 }}>
@@ -339,12 +500,13 @@ const Admin = () => {
                     )}
                 </div>
 
-                <div style={{
+                <div className="main-dashboard-grid" style={{
                     display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))',
-                    gap: '24px'
+                    gridTemplateColumns: '1.2fr 0.8fr',
+                    gap: '24px',
+                    width: '100%'
                 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
                         <DashboardCard title={loading ? "" : "Total Profit"}>
                             {loading ? (
                                 <SkeletonContent height="300px" />
@@ -407,7 +569,7 @@ const Admin = () => {
                         </DashboardCard>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', minWidth: 0 }}>
                         <DashboardCard title="Most Day Active">
                             {loading ? <SkeletonContent height="200px" /> : (
                                 <div style={{ height: '220px', width: '100%' }}>
@@ -455,23 +617,23 @@ const NavIconButton = ({ icon, badge }: { icon: React.ReactNode, badge?: boolean
 );
 
 const StatCard = ({ title, value, trend, positive, icon }: { title: string, value: string, trend: string, positive: boolean, icon: React.ReactNode }) => (
-    <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', border: '1px solid #E2E8F0' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{title}</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
+    <div className="stat-card-padding" style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', border: '1px solid #F1F5F9', boxShadow: '0 2px 4px rgba(0,0,0,0.01)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+            <span style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.5px', color: '#94A3B8' }}>{title}</span>
+            <div style={{ width: '32px', height: '32px', borderRadius: '10px', background: '#F8FAFC', border: '1px solid #F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{icon}</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px' }}>
-            <span style={{ fontSize: '24px', fontWeight: 800 }}>{value}</span>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: positive ? '#10B981' : '#EF4444' }}>{trend}</span>
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'baseline', gap: '6px' }}>
+            <span style={{ fontSize: '22px', fontWeight: 900, color: '#0F172A' }}>{value}</span>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: positive ? '#10B981' : '#EF4444', background: positive ? '#F0FDF4' : '#FEF2F2', padding: '2px 6px', borderRadius: '6px' }}>{trend}</span>
         </div>
     </div>
 );
 
 const DashboardCard = ({ title, children }: { title: string, children: React.ReactNode }) => (
-    <div style={{ background: '#ffffff', borderRadius: '20px', padding: '24px', border: '1px solid #E2E8F0', height: '100%' }}>
+    <div className="dashboard-card-inner" style={{ background: '#ffffff', borderRadius: '24px', padding: '24px', border: '1px solid #F1F5F9', height: '100%', boxShadow: '0 4px 12px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 800 }}>{title}</h3>
-            <MoreHorizontal size={20} />
+            <h3 style={{ fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>{title}</h3>
+            <button style={{ background: 'none', border: 'none', color: '#94A3B8', cursor: 'pointer' }}><MoreHorizontal size={18} /></button>
         </div>
         {children}
     </div>

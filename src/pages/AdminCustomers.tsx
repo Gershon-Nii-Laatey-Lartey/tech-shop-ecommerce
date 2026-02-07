@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
     Search,
     Mail,
@@ -36,13 +36,91 @@ const AdminCustomers = () => {
     const navigate = useNavigate();
     const [customers, setCustomers] = useState<CustomerWithStats[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchTerm, setSearchTerm] = useState('');
+    const [searchParams] = useSearchParams();
+    const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
 
     useEffect(() => {
         if (!authLoading && !isAdmin) {
             navigate('/');
         }
     }, [isAdmin, authLoading, navigate]);
+
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+            
+            .admin-customers-main {
+                margin-left: 260px;
+                padding: 40px;
+                transition: all 0.3s;
+            }
+
+            .customers-grid {
+                display: none;
+            }
+
+            .customers-table-container {
+                display: block;
+            }
+
+            @media (max-width: 1024px) {
+                .admin-customers-main {
+                    margin-left: 0;
+                    padding: 0 24px 40px 24px;
+                    margin-top: 60px;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .admin-customers-main {
+                    padding: 0 20px 100px 20px;
+                    margin-top: 60px;
+                }
+                .customers-grid {
+                    display: grid;
+                    grid-template-columns: 1fr;
+                    gap: 12px;
+                }
+                .customers-table-container {
+                    display: none;
+                }
+                .hide-mobile {
+                    display: none !important;
+                }
+                .customers-header {
+                    flex-direction: column;
+                    align-items: flex-start !important;
+                    gap: 16px;
+                }
+                .search-container {
+                    width: 100%;
+                }
+                .search-container input {
+                    width: 100% !important;
+                }
+            }
+
+            .customer-card-mobile {
+                background: white;
+                border: 1px solid #E2E8F0;
+                border-radius: 16px;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                transition: all 0.2s;
+            }
+            
+            .customer-card-mobile:hover {
+                box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+                transform: translateY(-2px);
+            }
+        `;
+        document.head.appendChild(style);
+        return () => document.head.removeChild(style);
+    }, []);
 
     useEffect(() => {
         if (isAdmin) {
@@ -105,14 +183,14 @@ const AdminCustomers = () => {
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>
             <AdminSidebar activeTab="Customers" />
 
-            <main style={{ flex: 1, padding: '40px', marginLeft: '260px' }}>
+            <main className="admin-customers-main" style={{ flex: 1 }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                    <div className="customers-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                         <div>
                             <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.03em' }}>Customers</h1>
-                            <p style={{ color: '#64748B', fontWeight: 600 }}>Manage your user base and view activity</p>
+                            <p className="hide-mobile" style={{ color: '#64748B', fontWeight: 600 }}>Manage your user base and view activity</p>
                         </div>
-                        <div style={{ position: 'relative' }}>
+                        <div className="search-container" style={{ position: 'relative' }}>
                             <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} size={16} />
                             <input
                                 type="text"
@@ -128,10 +206,120 @@ const AdminCustomers = () => {
                                     outline: 'none'
                                 }}
                             />
+                            {searchTerm && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    right: 0,
+                                    background: 'white',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                    zIndex: 50,
+                                    marginTop: '4px',
+                                    border: '1px solid #E2E8F0',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto'
+                                }}>
+                                    {filteredCustomers.slice(0, 5).map(customer => (
+                                        <div
+                                            key={customer.id}
+                                            onClick={() => {
+                                                setSearchTerm(customer.full_name || customer.email);
+                                            }}
+                                            style={{
+                                                padding: '12px 16px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '12px',
+                                                cursor: 'pointer',
+                                                borderBottom: '1px solid #F1F5F9'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = '#F8FAFC'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                        >
+                                            <img
+                                                src={customer.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${customer.email}`}
+                                                style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+                                            />
+                                            <div style={{ overflow: 'hidden' }}>
+                                                <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{customer.full_name || 'No Name'}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{customer.email}</div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {filteredCustomers.length === 0 && (
+                                        <div style={{ padding: '12px 16px', color: '#64748B', fontSize: '14px' }}>No customers found</div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     </div>
 
-                    <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #F1F5F9', overflow: 'hidden' }}>
+                    {/* Mobile Grid View */}
+                    <div className="customers-grid">
+                        {loading ? (
+                            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>Loading customers...</div>
+                        ) : filteredCustomers.length === 0 ? (
+                            <div style={{ padding: '40px', textAlign: 'center', color: '#64748b' }}>No customers found</div>
+                        ) : (
+                            filteredCustomers.map((customer) => (
+                                <div key={customer.id} className="customer-card-mobile">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                        <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: '#F1F5F9', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                            {customer.avatar_url ? (
+                                                <img src={customer.avatar_url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                            ) : (
+                                                <User size={24} color="#94A3B8" />
+                                            )}
+                                        </div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <p style={{ margin: 0, fontWeight: 800, color: '#0F172A', fontSize: '15px' }}>{customer.full_name || 'Unnamed'}</p>
+                                            <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{customer.email}</p>
+                                        </div>
+                                        <div style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            padding: '4px 8px',
+                                            borderRadius: '20px',
+                                            fontSize: '10px',
+                                            fontWeight: 800,
+                                            textTransform: 'uppercase',
+                                            background: customer.role === 'admin' ? '#EFF6FF' : '#F1F5F9',
+                                            color: customer.role === 'admin' ? '#1E40AF' : '#64748B',
+                                            border: customer.role === 'admin' ? '1px solid #DBEAFE' : 'none'
+                                        }}>
+                                            {customer.role === 'admin' && <Shield size={10} style={{ marginRight: '2px' }} />}
+                                            {customer.role}
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px 0', borderTop: '1px solid #F1F5F9', borderBottom: '1px solid #F1F5F9' }}>
+                                        <div>
+                                            <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>Total Spent</p>
+                                            <p style={{ margin: '4px 0 0 0', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>GH₵ {customer.stats.totalSpent.toFixed(2)}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>Orders</p>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
+                                                <ShoppingBag size={14} color="#5544ff" />
+                                                <p style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>{customer.stats.totalOrders}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <Calendar size={14} color="#94A3B8" />
+                                        <span style={{ fontSize: '12px', color: '#64748B', fontWeight: 600 }}>
+                                            Last Active: {customer.stats.lastOrderDate ? new Date(customer.stats.lastOrderDate).toLocaleDateString() : 'Never'}
+                                        </span>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+
+                    <div className="customers-table-container" style={{ background: '#fff', borderRadius: '24px', border: '1px solid #F1F5F9', overflow: 'hidden' }}>
                         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                             <thead>
                                 <tr style={{ background: '#F8FAFC' }}>

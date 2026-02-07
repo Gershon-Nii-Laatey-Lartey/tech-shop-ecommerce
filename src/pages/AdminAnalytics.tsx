@@ -30,12 +30,97 @@ const AdminAnalytics = () => {
         if (!authLoading && !isAdmin) navigate('/');
     }, [isAdmin, authLoading, navigate]);
 
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!authLoading && !isAdmin) navigate('/');
+    }, [isAdmin, authLoading, navigate]);
+
     useEffect(() => {
         if (isAdmin) fetchAnalytics();
     }, [isAdmin]);
 
+    useEffect(() => {
+        const style = document.createElement('style');
+        style.textContent = `
+            @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+            
+            .admin-analytics-main {
+                margin-left: 260px;
+                padding: 40px;
+                transition: all 0.3s;
+            }
+
+            .analytics-stats-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 24px;
+                margin-bottom: 32px;
+            }
+
+            .analytics-charts-grid {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 24px;
+            }
+
+            .chart-container {
+                height: 350px;
+                width: 100%;
+            }
+
+            .skeleton {
+                background: linear-gradient(90deg, #f1f5f9 25%, #f8fafc 50%, #f1f5f9 75%);
+                background-size: 200% 100%;
+                animation: loading 1.5s infinite;
+            }
+            @keyframes loading {
+                0% { background-position: 200% 0; }
+                100% { background-position: -200% 0; }
+            }
+
+            @media (max-width: 1024px) {
+                .admin-analytics-main {
+                    margin-left: 0;
+                    padding: 0 24px 40px 24px;
+                    margin-top: 60px;
+                }
+                .analytics-stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                .analytics-charts-grid {
+                    grid-template-columns: 1fr;
+                }
+            }
+
+            @media (max-width: 768px) {
+                .admin-analytics-main {
+                    padding: 0 20px 100px 20px;
+                    margin-top: 60px;
+                }
+                .analytics-stats-grid {
+                    grid-template-columns: 1fr;
+                    gap: 16px;
+                }
+                .analytics-header {
+                    flex-direction: column;
+                    align-items: flex-start !important;
+                    gap: 16px;
+                }
+                .chart-container {
+                    height: 250px;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        return () => {
+            document.head.removeChild(style);
+        };
+    }, []);
+
     const fetchAnalytics = async () => {
         try {
+            setLoading(true);
             const { data: analytics, error } = await supabase
                 .from('site_analytics')
                 .select('*')
@@ -79,7 +164,7 @@ const AdminAnalytics = () => {
         } catch (error) {
             console.error('Error fetching analytics:', error);
         } finally {
-            // Loading finished
+            setLoading(false);
         }
     };
 
@@ -89,9 +174,9 @@ const AdminAnalytics = () => {
         <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>
             <AdminSidebar activeTab="Analytics" />
 
-            <main style={{ flex: 1, padding: '40px', marginLeft: '260px' }}>
+            <main className="admin-analytics-main" style={{ flex: 1 }}>
                 <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
+                    <div className="analytics-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                         <div>
                             <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.03em' }}>Analytics Insights</h1>
                             <p style={{ color: '#64748B', fontWeight: 600 }}>Deep dive into your store performance and traffic</p>
@@ -102,28 +187,43 @@ const AdminAnalytics = () => {
                     </div>
 
                     {/* Quick Stats Grid */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '24px', marginBottom: '32px' }}>
-                        <AnalyticsStatCard title="Total Page Views" value={stats.totalViews} trend="+12.5%" icon={<Eye size={20} color="#5544ff" />} />
-                        <AnalyticsStatCard title="Unique Visitors" value={stats.uniqueVisitors} trend="+8.2%" icon={<Users size={20} color="#10b981" />} />
-                        <AnalyticsStatCard title="CTR" value={`${stats.clickThroughRate}%`} trend="-2.4%" icon={<MousePointer2 size={20} color="#f97316" />} />
-                        <AnalyticsStatCard title="Avg. Session" value={stats.avgSessionTime} trend="+1.2%" icon={<TrendingUp size={20} color="#8b5cf6" />} />
+                    <div className="analytics-stats-grid">
+                        {loading ? (
+                            <>
+                                <SkeletonStatCard />
+                                <SkeletonStatCard />
+                                <SkeletonStatCard />
+                                <SkeletonStatCard />
+                            </>
+                        ) : (
+                            <>
+                                <AnalyticsStatCard title="Total Page Views" value={stats.totalViews} trend="+12.5%" icon={<Eye size={20} color="#5544ff" />} />
+                                <AnalyticsStatCard title="Unique Visitors" value={stats.uniqueVisitors} trend="+8.2%" icon={<Users size={20} color="#10b981" />} />
+                                <AnalyticsStatCard title="CTR" value={`${stats.clickThroughRate}%`} trend="-2.4%" icon={<MousePointer2 size={20} color="#f97316" />} />
+                                <AnalyticsStatCard title="Avg. Session" value={stats.avgSessionTime} trend="+1.2%" icon={<TrendingUp size={20} color="#8b5cf6" />} />
+                            </>
+                        )}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '24px' }}>
+                    <div className="analytics-charts-grid">
                         {/* Main Traffic Chart */}
                         <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #F1F5F9', padding: '32px' }}>
                             <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px' }}>Traffic Overview</h3>
-                            <div style={{ height: '350px', width: '100%' }}>
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart data={stats.dailyTraffic}>
-                                        <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
-                                        <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} dy={10} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
-                                        <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
-                                        <Line type="monotone" dataKey="views" stroke="#5544ff" strokeWidth={4} dot={{ r: 4, fill: '#5544ff', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                                        <Line type="monotone" dataKey="clicks" stroke="#10b981" strokeWidth={4} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
-                                    </LineChart>
-                                </ResponsiveContainer>
+                            <div className="chart-container">
+                                {loading ? (
+                                    <SkeletonChart height="300px" />
+                                ) : (
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <LineChart data={stats.dailyTraffic}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
+                                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} dy={10} />
+                                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#94a3b8' }} />
+                                            <Tooltip contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' }} />
+                                            <Line type="monotone" dataKey="views" stroke="#5544ff" strokeWidth={4} dot={{ r: 4, fill: '#5544ff', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                                            <Line type="monotone" dataKey="clicks" stroke="#10b981" strokeWidth={4} dot={{ r: 4, fill: '#10b981', strokeWidth: 2, stroke: '#fff' }} activeDot={{ r: 6 }} />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                )}
                             </div>
                         </div>
 
@@ -131,17 +231,27 @@ const AdminAnalytics = () => {
                         <div style={{ background: '#fff', borderRadius: '24px', border: '1px solid #F1F5F9', padding: '32px' }}>
                             <h3 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '24px' }}>Popular Pages</h3>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                                {stats.topPages.map((page, i) => (
-                                    <div key={page.path} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                                            <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${COLORS[i]}15`, color: COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>
-                                                {i + 1}
+                                {loading ? (
+                                    <>
+                                        <SkeletonRow />
+                                        <SkeletonRow />
+                                        <SkeletonRow />
+                                        <SkeletonRow />
+                                        <SkeletonRow />
+                                    </>
+                                ) : (
+                                    stats.topPages.map((page, i) => (
+                                        <div key={page.path} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: `${COLORS[i]}15`, color: COLORS[i], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 800 }}>
+                                                    {i + 1}
+                                                </div>
+                                                <span style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>{page.path === '/' ? 'Home' : page.path}</span>
                                             </div>
-                                            <span style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>{page.path === '/' ? 'Home' : page.path}</span>
+                                            <span style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{page.count}</span>
                                         </div>
-                                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>{page.count}</span>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </div>
                     </div>
@@ -166,5 +276,30 @@ const AnalyticsStatCard = ({ title, value, trend, icon }: any) => (
         <p style={{ fontSize: '24px', fontWeight: 900, color: '#0F172A', margin: 0 }}>{value}</p>
     </div>
 )
+
+const SkeletonStatCard = () => (
+    <div style={{ background: '#ffffff', borderRadius: '24px', padding: '24px', border: '1px solid #F1F5F9' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
+            <div className="skeleton" style={{ width: '40px', height: '40px', borderRadius: '12px' }} />
+            <div className="skeleton" style={{ width: '50px', height: '20px', borderRadius: '8px' }} />
+        </div>
+        <div className="skeleton" style={{ width: '80px', height: '14px', marginBottom: '10px' }} />
+        <div className="skeleton" style={{ width: '60px', height: '24px' }} />
+    </div>
+);
+
+const SkeletonChart = ({ height }: { height: string }) => (
+    <div className="skeleton" style={{ width: '100%', height, borderRadius: '12px' }} />
+);
+
+const SkeletonRow = () => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div className="skeleton" style={{ width: '32px', height: '32px', borderRadius: '8px' }} />
+            <div className="skeleton" style={{ width: '100px', height: '14px' }} />
+        </div>
+        <div className="skeleton" style={{ width: '30px', height: '14px' }} />
+    </div>
+);
 
 export default AdminAnalytics;

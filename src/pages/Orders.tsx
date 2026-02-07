@@ -34,17 +34,21 @@ interface Order {
 }
 
 const Orders = () => {
-    const { user } = useAuth();
+    const { user, loading: authLoading } = useAuth();
     const navigate = useNavigate();
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
     const [reviewOrder, setReviewOrder] = useState<{ id: string, products: any[] } | null>(null);
 
     useEffect(() => {
+        if (authLoading) return;
+
         if (user) {
             fetchOrders();
+        } else {
+            navigate('/auth');
         }
-    }, [user]);
+    }, [user, authLoading, navigate]);
 
     const fetchOrders = async () => {
         try {
@@ -88,8 +92,16 @@ const Orders = () => {
         return (
             <div className="layout-with-sidebar">
                 <Sidebar />
-                <div style={{ flex: 1, padding: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                    <div className="loader" />
+                <div style={{ flex: 1, padding: '40px' }}>
+                    <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+                        <div className="skeleton" style={{ height: '40px', width: '200px', marginBottom: '12px' }} />
+                        <div className="skeleton" style={{ height: '20px', width: '300px', marginBottom: '32px' }} />
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {[1, 2, 3].map(i => (
+                                <div key={i} className="skeleton" style={{ height: '120px', borderRadius: '24px' }} />
+                            ))}
+                        </div>
+                    </div>
                 </div>
             </div>
         );

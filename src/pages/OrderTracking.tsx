@@ -18,6 +18,7 @@ interface OrderItem {
     product_name: string;
     quantity: number;
     price: number;
+    variant_name?: string;
     products: {
         image: string;
     } | null;
@@ -92,8 +93,17 @@ const OrderTracking = () => {
         return (
             <div className="layout-with-sidebar">
                 <Sidebar />
-                <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
-                    <div className="loader" />
+                <div style={{ flex: 1, padding: '40px', background: '#fff' }}>
+                    <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                        <div className="skeleton" style={{ height: '40px', width: '250px', marginBottom: '40px' }} />
+
+                        <div className="skeleton" style={{ height: '180px', borderRadius: '32px', marginBottom: '40px' }} />
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+                            <div className="skeleton" style={{ height: '120px', borderRadius: '24px' }} />
+                            <div className="skeleton" style={{ height: '120px', borderRadius: '24px' }} />
+                        </div>
+                    </div>
                 </div>
             </div>
         );
@@ -111,12 +121,12 @@ const OrderTracking = () => {
                     </Link>
 
                     <div className="order-header-section">
-                        <div>
-                            <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', marginBottom: '8px' }}>Order {order.order_number}</h1>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                            <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', marginBottom: '8px', wordBreak: 'break-word', lineHeight: 1.2 }}>Order {order.order_number}</h1>
                             <p style={{ color: '#64748B' }}>Placed on {new Date(order.created_at).toLocaleDateString()}</p>
                         </div>
-                        <div className="order-total-block">
-                            <p style={{ fontSize: '24px', fontWeight: 900, color: '#0F172A', textAlign: 'right' }}>GH₵ {order.total_amount.toFixed(2)}</p>
+                        <div className="order-total-block" style={{ flexShrink: 0 }}>
+                            <p style={{ fontSize: '24px', fontWeight: 900, color: '#0F172A', textAlign: 'right', whiteSpace: 'nowrap' }}>GH₵ {order.total_amount.toFixed(2)}</p>
                             <span style={{
                                 display: 'inline-block',
                                 padding: '6px 12px',
@@ -127,7 +137,8 @@ const OrderTracking = () => {
                                 fontWeight: 800,
                                 textTransform: 'uppercase',
                                 marginTop: '4px',
-                                float: 'right'
+                                float: 'right',
+                                whiteSpace: 'nowrap'
                             }}>
                                 {order.status}
                             </span>
@@ -205,7 +216,20 @@ const OrderTracking = () => {
                                             )}
                                         </div>
                                         <div style={{ flex: 1, minWidth: 0 }}>
-                                            <p style={{ fontWeight: 700, color: '#0F172A', fontSize: '14px', marginBottom: '4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product_name}</p>
+                                            <p style={{
+                                                fontWeight: 700,
+                                                color: '#0F172A',
+                                                fontSize: '14px',
+                                                marginBottom: '4px',
+                                                display: '-webkit-box',
+                                                WebkitLineClamp: 2,
+                                                WebkitBoxOrient: 'vertical',
+                                                overflow: 'hidden',
+                                                lineHeight: '1.4'
+                                            }}>
+                                                {item.product_name}
+                                            </p>
+                                            {item.variant_name && <p style={{ fontSize: '12px', color: '#5544ff', fontWeight: 700, marginBottom: '2px' }}>{item.variant_name}</p>}
                                             <p style={{ fontSize: '12px', color: '#64748B' }}>Qty: {item.quantity}</p>
                                         </div>
                                         <p style={{ fontWeight: 800, fontSize: '14px' }}>GH₵ {item.price.toFixed(2)}</p>

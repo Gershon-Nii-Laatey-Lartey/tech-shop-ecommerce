@@ -44,7 +44,7 @@ interface Address {
 }
 
 const Profile = () => {
-    const { user, profile, signOut } = useAuth();
+    const { user, profile, loading: authLoading, signOut } = useAuth();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'orders' | 'settings' | 'addresses'>('orders');
     const [orders, setOrders] = useState<Order[]>([]);
@@ -62,6 +62,8 @@ const Profile = () => {
     });
 
     useEffect(() => {
+        if (authLoading) return;
+
         if (!user) {
             navigate('/auth');
             return;
@@ -73,7 +75,7 @@ const Profile = () => {
         if (profile?.full_name) {
             setNewAddress(prev => ({ ...prev, full_name: profile.full_name || '' }));
         }
-    }, [user, navigate, profile]);
+    }, [user, navigate, profile, authLoading]);
 
     const fetchOrders = async () => {
         if (!user) return;

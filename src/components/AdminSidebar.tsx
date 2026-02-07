@@ -10,7 +10,6 @@ import {
     Percent,
     Settings,
     HelpCircle,
-    ShoppingCart,
     PanelLeftClose,
     Menu,
     X,
@@ -41,22 +40,19 @@ const AdminSidebar = ({ activeTab }: AdminSidebarProps) => {
                 alignItems: 'center',
                 padding: '0 20px',
                 zIndex: 45,
-                justifyContent: 'space-between'
+                justifyContent: 'space-between',
+                marginBottom: 0
             }} className="mobile-admin-header">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{
-                        width: '28px',
-                        height: '28px',
-                        background: '#5544ff',
-                        borderRadius: '6px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
-                    }}>
-                        <ShoppingCart size={14} color="white" />
+                <div
+                    onClick={() => navigate('/admin')}
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                >
+                    <div style={{ position: 'relative', width: '32px', height: '32px' }}>
+                        <div style={{ position: 'absolute', width: '16px', height: '16px', background: '#5544ff', borderRadius: '50% 50% 0 50%' }}></div>
+                        <div style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', background: '#5544ff', borderRadius: '50% 0 50% 50%', opacity: 0.6 }}></div>
+                        <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', border: '2px solid white' }}></div>
                     </div>
-                    <span style={{ fontSize: '16px', fontWeight: 800, color: '#000' }}>Shoppers</span>
+                    <span style={{ fontSize: '20px', fontWeight: 900, color: '#000', letterSpacing: '-0.04em' }}>TECH SHOP</span>
                 </div>
                 <button onClick={() => setIsOpen(!isOpen)} style={{ padding: '8px', background: '#F8FAFC', borderRadius: '8px' }}>
                     {isOpen ? <X size={20} /> : <Menu size={20} />}
@@ -81,20 +77,16 @@ const AdminSidebar = ({ activeTab }: AdminSidebarProps) => {
             >
                 {/* Brand Header */}
                 <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{
-                            width: '28px',
-                            height: '28px',
-                            background: '#5544ff',
-                            borderRadius: '6px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            clipPath: 'polygon(25% 0%, 75% 0%, 100% 50%, 75% 100%, 25% 100%, 0% 50%)'
-                        }}>
-                            <ShoppingCart size={14} color="white" />
+                    <div
+                        onClick={() => navigate('/admin')}
+                        style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}
+                    >
+                        <div style={{ position: 'relative', width: '32px', height: '32px' }}>
+                            <div style={{ position: 'absolute', width: '16px', height: '16px', background: '#5544ff', borderRadius: '50% 50% 0 50%' }}></div>
+                            <div style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', background: '#5544ff', borderRadius: '50% 0 50% 50%', opacity: 0.6 }}></div>
+                            <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', border: '2px solid white' }}></div>
                         </div>
-                        <span style={{ fontSize: '16px', fontWeight: 800, letterSpacing: '-0.02em', color: '#000000' }}>Shoppers</span>
+                        <span style={{ fontSize: '20px', fontWeight: 900, letterSpacing: '-0.04em', color: '#000000' }}>TECH SHOP</span>
                     </div>
                     <PanelLeftClose size={16} color="#000000" style={{ cursor: 'pointer' }} className="hide-mobile" />
                 </div>
@@ -120,7 +112,7 @@ const AdminSidebar = ({ activeTab }: AdminSidebarProps) => {
 
                 <div style={{ padding: '12px 16px', borderTop: '1px solid #F1F5F9' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', marginBottom: '12px' }}>
-                        <SidebarItem icon={<Settings />} label="Settings" onClick={() => { setIsOpen(false); }} />
+                        <SidebarItem icon={<Settings />} label="Settings" active={activeTab === 'Settings'} onClick={() => { navigate('/admin/settings'); setIsOpen(false); }} />
                         <SidebarItem icon={<HelpCircle />} label="Help & Support" onClick={() => { setIsOpen(false); }} />
                     </div>
 

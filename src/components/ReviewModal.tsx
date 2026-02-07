@@ -77,6 +77,23 @@ const ReviewModal: React.FC<ReviewModalProps> = ({ isOpen, onClose, orderId, pro
 
             if (error) throw error;
 
+            // Update product's aggregate rating and review count
+            const { data: allReviews } = await supabase
+                .from('product_reviews')
+                .select('rating')
+                .eq('product_id', currentProduct.id);
+
+            if (allReviews && allReviews.length > 0) {
+                const avgRating = allReviews.reduce((acc, rev) => acc + rev.rating, 0) / allReviews.length;
+                await supabase
+                    .from('products')
+                    .update({
+                        rating: parseFloat(avgRating.toFixed(1)),
+                        reviews_count: allReviews.length
+                    })
+                    .eq('id', currentProduct.id);
+            }
+
             if (step < products.length - 1) {
                 setStep(step + 1);
             } else {

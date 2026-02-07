@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ChevronDown, Settings, User, LogOut, ChevronRight, ShoppingBag, HelpCircle } from 'lucide-react';
+import { ChevronDown, Settings, User, LogOut, ChevronRight, ShoppingBag, HelpCircle, ChevronUp, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { useCategories } from '../contexts/CategoryContext';
@@ -22,8 +22,8 @@ const CategoryItem = ({ name, description }: { name: string, description?: strin
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    padding: '10px 12px',
-                    borderRadius: '12px',
+                    padding: '8px 12px',
+                    borderRadius: '11px',
                     transition: 'all 0.2s',
                     color: isOpen ? 'var(--primary-color)' : '#aaa',
                     fontWeight: 700,
@@ -58,8 +58,8 @@ const CategoryItem = ({ name, description }: { name: string, description?: strin
                         <span
                             style={{
                                 display: 'block',
-                                padding: '8px 12px',
-                                fontSize: '13px',
+                                padding: '4px 10px',
+                                fontSize: '12px',
                                 color: '#888',
                                 fontWeight: 600,
                                 lineHeight: 1.4
@@ -76,6 +76,7 @@ const CategoryItem = ({ name, description }: { name: string, description?: strin
 
 const Sidebar = () => {
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [isMoreOpen, setIsMoreOpen] = useState(false);
     const { categories } = useCategories();
     const { user, profile, signOut, isAdmin } = useAuth();
     const navigate = useNavigate();
@@ -91,15 +92,87 @@ const Sidebar = () => {
 
     return (
         <aside className="sticky-sidebar">
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <Link to="/" style={{ color: 'var(--primary-color)', fontSize: '18px', fontWeight: 900, letterSpacing: '-0.03em', textDecoration: 'none', marginBottom: '10px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <Link to="/" style={{ color: 'var(--primary-color)', fontSize: '17px', fontWeight: 900, letterSpacing: '-0.03em', textDecoration: 'none', marginBottom: '8px' }}>
                     COLLECTIONS
                 </Link>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                    {categories.map((cat) => (
-                        <CategoryItem key={cat.id} name={cat.name} description={cat.description} />
-                    ))}
+                <div style={{ position: 'relative', overflow: 'hidden' }}>
+                    <AnimatePresence mode="wait" initial={false}>
+                        {!isMoreOpen ? (
+                            <motion.div
+                                key="main-cats"
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -20, opacity: 0 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}
+                            >
+                                {categories.slice(0, 6).map((cat) => (
+                                    <CategoryItem key={cat.id} name={cat.name} description={cat.description} />
+                                ))}
+                                {categories.length > 6 && (
+                                    <button
+                                        onClick={() => setIsMoreOpen(true)}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '10px',
+                                            padding: '10px 12px',
+                                            marginTop: '4px',
+                                            background: 'rgba(85, 68, 255, 0.03)',
+                                            border: '1px dashed rgba(85, 68, 255, 0.2)',
+                                            borderRadius: '12px',
+                                            color: 'var(--primary-color)',
+                                            fontWeight: 800,
+                                            fontSize: '13px',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                        }}
+                                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(85, 68, 255, 0.06)')}
+                                        onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(85, 68, 255, 0.03)')}
+                                    >
+                                        <MoreHorizontal size={14} />
+                                        MORE
+                                        <ChevronDown size={14} style={{ marginLeft: 'auto' }} />
+                                    </button>
+                                )}
+                            </motion.div>
+                        ) : (
+                            <motion.div
+                                key="more-cats"
+                                initial={{ y: 20, opacity: 0 }}
+                                animate={{ y: 0, opacity: 1 }}
+                                exit={{ y: -20, opacity: 0 }}
+                                transition={{ duration: 0.2, ease: "easeOut" }}
+                                style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}
+                            >
+                                <button
+                                    onClick={() => setIsMoreOpen(false)}
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '10px',
+                                        padding: '10px 12px',
+                                        marginBottom: '4px',
+                                        background: 'rgba(85, 68, 255, 0.08)',
+                                        border: 'none',
+                                        borderRadius: '12px',
+                                        color: 'var(--primary-color)',
+                                        fontWeight: 800,
+                                        fontSize: '13px',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    <ChevronUp size={14} />
+                                    LESS
+                                </button>
+                                {categories.slice(6).map((cat) => (
+                                    <CategoryItem key={cat.id} name={cat.name} description={cat.description} />
+                                ))}
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* Admin Dashboard Link */}

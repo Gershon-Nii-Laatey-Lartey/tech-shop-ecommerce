@@ -15,6 +15,8 @@ interface Product {
     price: string;
     image: string;
     category: string;
+    rating?: number;
+    reviews_count?: number;
     is_new?: boolean;
 }
 
@@ -185,29 +187,32 @@ const SearchResults = () => {
                                     "Exploring All Tech"
                                 )}
                             </h1>
-                            {!loading && (
-                                <p className="results-count">
-                                    {totalCount} items found
-                                    {(categoryFilter || minPriceValue > 0 || maxPriceValue < 100000) && " • Filters applied"}
-                                </p>
-                            )}
-                        </div>
 
-                        <div className="search-actions">
-                            <button className="filter-chip" onClick={() => setShowFilters(true)}>
-                                <SlidersHorizontal size={14} />
-                                Filters
-                                {(categoryFilter || minPriceValue > 0 || maxPriceValue < 100000) && <span className="filter-indicator" />}
-                            </button>
+                            <div className="search-meta-row">
+                                {!loading && (
+                                    <p className="results-count">
+                                        {totalCount} items {isMobile ? "" : "found"}
+                                        {(categoryFilter || minPriceValue > 0 || maxPriceValue < 100000) && " • Filters applied"}
+                                    </p>
+                                )}
+
+                                <div className="search-actions">
+                                    <button className="filter-chip" onClick={() => setShowFilters(true)}>
+                                        <SlidersHorizontal size={14} />
+                                        <span>Filters</span>
+                                        {(categoryFilter || minPriceValue > 0 || maxPriceValue < 100000) && <span className="filter-indicator" />}
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
                     <div className="results-content">
                         {loading && page === 0 ? (
-                            <div className="loading-grid">
-                                {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                                    <div key={i} className="skeleton product-skeleton" />
-                                ))}
+                            <div style={{ display: 'flex', justifyContent: 'center', padding: '100px 0', width: '100%' }}>
+                                <div className="loading-dots">
+                                    <span>.</span><span>.</span><span>.</span>
+                                </div>
                             </div>
                         ) : products.length > 0 ? (
                             <>
@@ -387,7 +392,7 @@ const SearchResults = () => {
                     flex: 1;
                     background: #fff;
                     min-height: 100vh;
-                    padding: 40px;
+                    padding: 24px 40px 40px;
                 }
                 .search-results-container {
                     max-width: 1200px;
@@ -395,38 +400,27 @@ const SearchResults = () => {
                 }
                 .search-page-header {
                     display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    margin-bottom: 48px;
-                    gap: 24px;
-                }
-                .back-link {
-                    display: flex;
-                    align-items: center;
-                    gap: 8px;
-                    background: #f8fafc;
-                    border: 1px solid #f1f5f9;
-                    padding: 10px 16px;
-                    border-radius: 12px;
-                    font-size: 14px;
-                    font-weight: 700;
-                    color: #64748B;
-                    cursor: pointer;
-                    transition: all 0.2s;
-                }
-                .back-link:hover {
-                    background: #f1f5f9;
-                    color: #0F172A;
+                    flex-direction: column;
+                    align-items: flex-start;
+                    margin-bottom: 40px;
+                    gap: 16px;
                 }
                 .search-meta {
-                    flex: 1;
+                    width: 100%;
                 }
                 .search-title {
                     font-size: 32px;
                     font-weight: 900;
                     color: #0F172A;
                     letter-spacing: -0.04em;
-                    margin: 0 0 4px 0;
+                    margin: 0 0 12px 0;
+                }
+                .search-meta-row {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    width: 100%;
+                    gap: 16px;
                 }
                 .query-highlight {
                     color: #5544ff;
@@ -549,22 +543,27 @@ const SearchResults = () => {
                     cursor: pointer;
                     box-shadow: 0 10px 20px rgba(85, 68, 255, 0.2);
                 }
+                .loading-dots {
+                    font-size: 40px;
+                    font-weight: 900;
+                    letter-spacing: 4px;
+                }
+                .loading-dots span {
+                    animation: blink 1s infinite;
+                }
+                .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+                .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+                @keyframes blink {
+                    0% { opacity: 0; }
+                    50% { opacity: 1; }
+                    100% { opacity: 0; }
+                }
                 .loading-grid {
                     display: grid;
                     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
                     gap: 32px;
                 }
-                .product-skeleton {
-                    height: 380px;
-                    background: #F8FAFC;
-                    border-radius: 32px;
-                    animation: pulse 1.5s infinite;
-                }
-                @keyframes pulse {
-                    0% { opacity: 0.6; }
-                    50% { opacity: 0.3; }
-                    100% { opacity: 0.6; }
-                }
+
 
                 /* Filter UI Styles */
                 .filter-backdrop {
@@ -777,22 +776,29 @@ const SearchResults = () => {
 
                 @media (max-width: 900px) {
                     .search-results-main {
-                        padding: 16px 8px !important;
+                        padding: 12px 0px !important;
                     }
                     .search-page-header {
-                        flex-direction: column;
-                        align-items: flex-start;
                         padding: 0 16px;
-                        gap: 20px;
-                        margin-bottom: 32px;
+                        margin-bottom: 24px;
+                        gap: 12px;
                     }
                     .search-title {
-                        font-size: 24px;
+                        font-size: 22px;
+                        margin-bottom: 8px;
+                    }
+                    .results-count {
+                        font-size: 13px;
+                    }
+                    .filter-chip {
+                        padding: 8px 14px;
+                        border-radius: 10px;
+                        font-size: 12px;
                     }
                     .product-grid-main {
                         grid-template-columns: repeat(2, 1fr);
                         gap: 12px;
-                        padding: 0 4px;
+                        padding: 0 12px;
                     }
                 }
             `}</style>

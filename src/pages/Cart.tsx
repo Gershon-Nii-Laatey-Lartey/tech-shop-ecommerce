@@ -1,16 +1,86 @@
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ChevronLeft, ShieldCheck, Truck } from 'lucide-react';
+import { ShoppingCart, Trash2, Plus, Minus, ArrowRight, ChevronLeft, ShieldCheck, Truck, MapPin } from 'lucide-react';
 import { useCart } from '../contexts/CartContext';
+import { useAuth } from '../contexts/AuthContext';
+import { supabase } from '../supabaseClient';
 import Sidebar from '../components/Sidebar';
 
 const Cart = () => {
-    const { items, total, removeFromCart, updateQuantity } = useCart();
+    const { items, total, removeFromCart, updateQuantity, selectedIds, toggleSelection, toggleSelectAll } = useCart();
+    const { user } = useAuth();
     const navigate = useNavigate();
 
-    const shipping = 0; // Free shipping for now
-    const tax = total * 0.08; // 8% tax example
-    const grandTotal = total + shipping + tax;
+    const [shipping, setShipping] = useState<number | null>(null);
+    const [defaultAddress, setDefaultAddress] = useState<any>(null);
+    const [loadingShipping, setLoadingShipping] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            fetchDefaultAddress();
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (defaultAddress && items.length > 0) {
+            calculateShipping();
+        }
+    }, [defaultAddress, items]);
+
+    const fetchDefaultAddress = async () => {
+        const { data } = await supabase
+            .from('shipping_addresses')
+            .select('*')
+            .eq('user_id', user?.id)
+            .eq('is_default', true)
+            .maybeSingle();
+
+        if (data) setDefaultAddress(data);
+    };
+
+    const calculateShipping = async () => {
+        try {
+            setLoadingShipping(true);
+            const { data: settingsData } = await supabase
+                .from('admin_settings')
+                .select('value')
+                .eq('key', 'logistics_config')
+                .single();
+
+            const config = settingsData?.value;
+            if (!config?.is_enabled || !config?.api_endpoint) {
+                setShipping(0);
+                return;
+            }
+
+            // Fetch zone names
+            const { data: zone } = await supabase.from('logistics_zones').select('name').eq('id', defaultAddress.zone_id).single();
+            const { data: subZone } = await supabase.from('logistics_zones').select('name').eq('id', defaultAddress.sub_zone_id).single();
+            const { data: area } = await supabase.from('logistics_zones').select('name').eq('id', defaultAddress.area_id).single();
+
+            const response = await fetch(config.api_endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    location: { zone: zone?.name, sub_zone: subZone?.name, area: area?.name },
+                    cart_total: total,
+                    items_weight: items
+                        .filter(item => selectedIds.includes(item.id))
+                        .reduce((acc, item) => acc + (item.weight || 0) * item.quantity, 0)
+                })
+            });
+            const data = await response.json();
+            setShipping(data.delivery_fee ?? 0);
+        } catch (err) {
+            console.error('Error calculating shipping:', err);
+            setShipping(0);
+        } finally {
+            setLoadingShipping(false);
+        }
+    };
+
+    const grandTotal = total + (shipping || 0);
 
     return (
         <div className="layout-with-sidebar">
@@ -20,16 +90,16 @@ const Cart = () => {
                 flex: 1,
                 background: '#fff',
                 minHeight: '100vh',
-                padding: '40px',
+                padding: '24px 32px',
                 maxWidth: '1200px',
                 margin: '0 auto',
                 width: '100%'
             }}>
 
                 {/* Header */}
-                <div className="cart-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '40px' }}>
+                <div className="cart-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
                     <div>
-                        <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.04em' }}>
+                        <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.04em' }}>
                             Your Shopping Bag
                         </h1>
                         <p style={{ color: '#6B7280', marginTop: '4px', fontWeight: 500 }}>
@@ -107,12 +177,34 @@ const Cart = () => {
                     <div className="cart-grid" style={{
                         display: 'grid',
                         gridTemplateColumns: '2fr 1fr',
-                        gap: '48px',
+                        gap: '32px',
                         alignItems: 'start'
                     }}>
 
                         {/* Items List */}
-                        <div className="items-column" style={{ display: 'flex', flexDirection: 'column', gap: '32px' }}>
+                        <div className="items-column" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            {items.length > 0 && (
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '12px',
+                                    paddingBottom: '12px',
+                                    borderBottom: '1px solid #F1F5F9'
+                                }}>
+                                    <input
+                                        type="checkbox"
+                                        checked={selectedIds.length === items.length && items.length > 0}
+                                        onChange={() => toggleSelectAll()}
+                                        style={{
+                                            cursor: 'pointer',
+                                            accentColor: '#5544ff'
+                                        }}
+                                    />
+                                    <span style={{ fontSize: '14px', fontWeight: 700, color: '#64748B' }}>
+                                        Select All ({items.length})
+                                    </span>
+                                </div>
+                            )}
                             <AnimatePresence mode='popLayout'>
                                 {items.map((item) => (
                                     <motion.div
@@ -124,21 +216,31 @@ const Cart = () => {
                                         className="cart-item-row"
                                         style={{
                                             display: 'flex',
-                                            gap: '24px',
-                                            paddingBottom: '32px',
+                                            alignItems: 'center',
+                                            gap: '12px',
+                                            paddingBottom: '20px',
                                             borderBottom: '1px solid #F1F5F9'
                                         }}
                                     >
+                                        <input
+                                            type="checkbox"
+                                            checked={selectedIds.includes(item.id)}
+                                            onChange={() => toggleSelection(item.id)}
+                                            style={{
+                                                cursor: 'pointer',
+                                                accentColor: '#5544ff'
+                                            }}
+                                        />
                                         <div className="item-image-box" style={{
-                                            width: '120px',
-                                            height: '140px',
+                                            width: '90px',
+                                            height: '100px',
                                             background: '#F8FAFC',
                                             border: '1px solid #F1F5F9',
-                                            borderRadius: '24px',
+                                            borderRadius: '16px',
                                             display: 'flex',
                                             alignItems: 'center',
                                             justifyContent: 'center',
-                                            padding: '20px',
+                                            padding: '12px',
                                             flexShrink: 0
                                         }}>
                                             <img
@@ -148,16 +250,32 @@ const Cart = () => {
                                             />
                                         </div>
 
-                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minWidth: 0 }}>
                                             <div>
-                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '4px' }}>
-                                                    <Link to={`/product/${item.product_id}`} style={{ textDecoration: 'none', flex: 1 }}>
-                                                        <h3 className="item-name" style={{ fontSize: '18px', fontWeight: 700, color: '#0F172A', margin: 0, paddingRight: '12px' }}>{item.name}</h3>
+                                                <div className="item-info-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '2px', gap: '12px' }}>
+                                                    <Link to={`/product/${item.product_id}`} style={{ textDecoration: 'none', flex: 1, minWidth: 0 }}>
+                                                        <h3 className="item-name" style={{
+                                                            fontSize: '16px',
+                                                            fontWeight: 700,
+                                                            color: '#0F172A',
+                                                            margin: 0,
+                                                            wordBreak: 'break-word',
+                                                            overflow: 'hidden',
+                                                            display: '-webkit-box',
+                                                            WebkitLineClamp: 2,
+                                                            WebkitBoxOrient: 'vertical',
+                                                            lineHeight: 1.4
+                                                        }}>{item.name}</h3>
                                                     </Link>
-                                                    <p className="item-total-price" style={{ fontSize: '18px', fontWeight: 900, color: '#0F172A', margin: 0 }}>
+                                                    <p className="item-total-price" style={{ fontSize: '16px', fontWeight: 900, color: '#0F172A', margin: 0, whiteSpace: 'nowrap' }}>
                                                         GH₵ {(item.price * item.quantity).toFixed(2)}
                                                     </p>
                                                 </div>
+                                                {item.variant_name && (
+                                                    <p style={{ fontSize: '13px', color: '#5544ff', fontWeight: 700, margin: '2px 0' }}>
+                                                        {item.variant_name}
+                                                    </p>
+                                                )}
                                                 <p className="item-unit-price" style={{ fontSize: '14px', color: '#64748B', fontWeight: 600 }}>GH₵ {item.price.toFixed(2)} unit price</p>
                                             </div>
 
@@ -227,14 +345,28 @@ const Cart = () => {
                                         <span style={{ color: '#64748B', fontWeight: 600 }}>Subtotal</span>
                                         <span style={{ fontWeight: 800, color: '#0F172A' }}>GH₵ {total.toFixed(2)}</span>
                                     </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                                        <span style={{ color: '#64748B', fontWeight: 600 }}>Estimated Tax</span>
-                                        <span style={{ fontWeight: 800, color: '#0F172A' }}>GH₵ {tax.toFixed(2)}</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                         <span style={{ color: '#64748B', fontWeight: 600 }}>Estimated Shipping</span>
-                                        <span style={{ fontWeight: 800, color: '#10B981' }}>FREE</span>
+                                        <span style={{ fontWeight: 800, color: shipping === 0 ? '#10B981' : '#0F172A' }}>
+                                            {loadingShipping ? (
+                                                <div className="skeleton" style={{ width: '80px', height: '18px' }} />
+                                            ) : (
+                                                shipping !== null ? `GH₵ ${shipping.toFixed(2)}` : (
+                                                    defaultAddress ? (
+                                                        <div className="skeleton" style={{ width: '60px', height: '18px' }} />
+                                                    ) : 'Not calculated'
+                                                )
+                                            )}
+                                        </span>
                                     </div>
+                                    {defaultAddress && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '4px' }}>
+                                            <MapPin size={12} color="#94A3B8" />
+                                            <span style={{ fontSize: '11px', color: '#94A3B8', fontWeight: 600 }}>
+                                                Shipping to {defaultAddress.city}
+                                            </span>
+                                        </div>
+                                    )}
                                 </div>
 
                                 <div style={{
@@ -249,7 +381,13 @@ const Cart = () => {
                                 </div>
 
                                 <button
-                                    onClick={() => navigate('/checkout')}
+                                    onClick={() => {
+                                        if (!user) {
+                                            navigate('/auth?redirect=checkout');
+                                        } else {
+                                            navigate('/checkout');
+                                        }
+                                    }}
                                     style={{
                                         width: '100%',
                                         background: '#0F172A',
@@ -347,12 +485,17 @@ const Cart = () => {
                                 height: 120px !important;
                                 border-radius: 20px !important;
                             }
+                            .item-info-header {
+                                flex-direction: column !important;
+                                gap: 4px !important;
+                            }
                             .item-name {
-                                font-size: 16px !important;
-                                line-height: 1.3;
+                                font-size: 15px !important;
+                                -webkit-line-clamp: 3 !important;
+                                margin-bottom: 4px !important;
                             }
                             .item-total-price {
-                                font-size: 16px !important;
+                                font-size: 15px !important;
                             }
                             .item-unit-price {
                                 font-size: 12px !important;
@@ -378,6 +521,39 @@ const Cart = () => {
                             .cart-trust-badges {
                                 grid-template-columns: 1fr 1fr !important;
                             }
+                        }
+
+                        input[type="checkbox"] {
+                            appearance: none;
+                            -webkit-appearance: none;
+                            width: 18px;
+                            height: 18px;
+                            border: 2px solid #E2E8F0;
+                            border-radius: 6px;
+                            background-color: #fff;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            cursor: pointer;
+                            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                            position: relative;
+                        }
+
+                        input[type="checkbox"]:checked {
+                            background-color: #5544ff;
+                            border-color: #5544ff;
+                            box-shadow: 0 4px 12px rgba(85, 68, 255, 0.3);
+                        }
+
+                        input[type="checkbox"]:checked::after {
+                            content: '✓';
+                            color: white;
+                            font-size: 11px;
+                            font-weight: 900;
+                        }
+
+                        input[type="checkbox"]:hover {
+                            border-color: #5544ff;
                         }
                     `}</style>
 

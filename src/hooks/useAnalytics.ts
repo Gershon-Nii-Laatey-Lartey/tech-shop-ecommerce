@@ -7,7 +7,12 @@ import { useAuth } from '../contexts/AuthContext';
 const getSessionId = () => {
     let sessionId = localStorage.getItem('site_session_id');
     if (!sessionId) {
-        sessionId = crypto.randomUUID();
+        // Fallback for crypto.randomUUID() which requires HTTPS and modern browsers
+        if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+            sessionId = crypto.randomUUID();
+        } else {
+            sessionId = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        }
         localStorage.setItem('site_session_id', sessionId);
     }
     return sessionId;
