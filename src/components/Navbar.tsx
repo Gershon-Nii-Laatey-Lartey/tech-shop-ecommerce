@@ -69,9 +69,10 @@ const Navbar = () => {
       style={{
         transition: 'background-color 0.3s, padding 0.3s',
         backgroundColor: 'rgba(85, 68, 255, 0.95)',
-        padding: '0 30px',
+        padding: isMobile ? '0 10px' : '0 30px',
         display: 'flex',
-        alignItems: 'center'
+        alignItems: 'center',
+        justifyContent: 'space-between'
       }}
     >
       <AnimatePresence mode="wait">
@@ -83,11 +84,11 @@ const Navbar = () => {
             exit={{ opacity: 0, x: -10 }}
             style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}
           >
-            <Link to="/" style={{ fontSize: '24px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: '12px', letterSpacing: '-0.04em', textDecoration: 'none', color: 'white' }}>
-              <div style={{ position: 'relative', width: '32px', height: '32px' }}>
-                <div style={{ position: 'absolute', width: '16px', height: '16px', background: 'white', borderRadius: '50% 50% 0 50%' }}></div>
-                <div style={{ position: 'absolute', bottom: 0, right: 0, width: '16px', height: '16px', background: 'white', borderRadius: '50% 0 50% 50%', opacity: 0.6 }}></div>
-                <div style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', background: '#4ade80', borderRadius: '50%', border: '2px solid var(--primary-color)' }}></div>
+            <Link to="/" style={{ fontSize: isMobile ? '22px' : '24px', fontWeight: 900, display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '12px', letterSpacing: '-0.04em', textDecoration: 'none', color: 'white' }}>
+              <div style={{ position: 'relative', width: isMobile ? '32px' : '32px', height: isMobile ? '32px' : '32px' }}>
+                <div style={{ position: 'absolute', width: isMobile ? '16px' : '16px', height: isMobile ? '16px' : '16px', background: 'white', borderRadius: '50% 50% 0 50%' }}></div>
+                <div style={{ position: 'absolute', bottom: 0, right: 0, width: isMobile ? '16px' : '16px', height: isMobile ? '16px' : '16px', background: 'white', borderRadius: '50% 0 50% 50%', opacity: 0.6 }}></div>
+                <div style={{ position: 'absolute', top: '-1px', right: '-1px', width: '6px', height: '6px', background: '#4ade80', borderRadius: '50%', border: '1.5px solid var(--primary-color)' }}></div>
               </div>
               <span style={{ fontSize: isMobile ? '20px' : '24px' }}>TECH SHOP</span>
             </Link>
@@ -100,8 +101,8 @@ const Navbar = () => {
         display: 'flex',
         justifyContent: 'flex-end',
         alignItems: 'center',
-        paddingLeft: isSearchOpen && isMobile ? '0' : '24px',
-        paddingRight: '24px',
+        paddingLeft: isSearchOpen && isMobile ? '0' : (isMobile ? '8px' : '24px'),
+        paddingRight: isMobile ? '8px' : '24px',
         overflow: 'hidden'
       }}>
         <AnimatePresence mode="wait">
@@ -112,7 +113,7 @@ const Navbar = () => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
               transition={{ duration: 0.2 }}
-              style={{ display: 'flex', gap: '20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', alignItems: 'center' }}
+              style={{ display: 'flex', gap: isMobile ? '10px' : '20px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', alignItems: 'center' }}
             >
               <Link to="/" className="hide-mobile" style={{ transition: 'all 0.2s', color: 'white', opacity: 0.7 }}>Home</Link>
               <Link to="/orders" className="hide-mobile" style={{ transition: 'all 0.2s', color: 'white', opacity: 0.7 }}>Orders</Link>
@@ -120,7 +121,7 @@ const Navbar = () => {
                 onClick={() => setIsSearchOpen(true)}
                 style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', opacity: 0.7, padding: '8px' }}
               >
-                <Search size={22} strokeWidth={2.5} />
+                <Search size={isMobile ? 22 : 22} strokeWidth={2.5} />
               </button>
             </motion.div>
           ) : (
@@ -142,16 +143,16 @@ const Navbar = () => {
               <input
                 ref={searchInputRef}
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
                   width: '100%',
-                  height: '40px',
+                  height: '36px',
                   background: 'white',
                   border: 'none',
-                  borderRadius: '21px',
-                  padding: '0 45px 0 20px',
+                  borderRadius: '18px',
+                  padding: '0 35px 0 15px',
                   color: '#0f172a',
                   fontSize: '15px',
                   fontWeight: 600,
@@ -159,27 +160,21 @@ const Navbar = () => {
                   boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
                 }}
               />
-              <style>{`
-                input::placeholder {
-                  color: #94a3b8;
-                  opacity: 1;
-                }
-              `}</style>
               <button
                 type="button"
                 onClick={() => { setIsSearchOpen(false); setSearchQuery(''); }}
-                style={{ position: 'absolute', right: '12px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                style={{ position: 'absolute', right: '8px', background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
               >
-                <X size={20} />
+                <X size={18} />
               </button>
             </motion.form>
           )}
         </AnimatePresence>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flexShrink: 0 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '12px' : '20px', flexShrink: 0 }}>
         <Link to="/cart" style={{ position: 'relative', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <ShoppingBag size={22} strokeWidth={2.5} />
+          <ShoppingBag size={isMobile ? 22 : 22} strokeWidth={2.5} />
           <AnimatePresence mode="popLayout">
             {itemCount > 0 && (
               <motion.span
@@ -194,10 +189,10 @@ const Navbar = () => {
                   right: '-10px',
                   background: 'linear-gradient(135deg, #ff3b30 0%, #ff2d55 100%)',
                   color: 'white',
-                  fontSize: '10px',
+                  fontSize: '9px',
                   fontWeight: 900,
-                  minWidth: '18px',
-                  height: '18px',
+                  minWidth: '16px',
+                  height: '16px',
                   borderRadius: '10px',
                   padding: '0 4px',
                   display: 'flex',
@@ -207,14 +202,7 @@ const Navbar = () => {
                   pointerEvents: 'none'
                 }}
               >
-                <motion.span
-                  key={itemCount}
-                  initial={{ y: 5, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  transition={{ type: 'spring', damping: 12, stiffness: 300 }}
-                >
-                  {itemCount}
-                </motion.span>
+                {itemCount}
               </motion.span>
             )}
           </AnimatePresence>
@@ -222,12 +210,12 @@ const Navbar = () => {
 
         {!user ? (
           <Link to="/auth" style={{
-            height: '40px',
-            padding: '0 20px',
+            height: isMobile ? '34px' : '40px',
+            padding: isMobile ? '0 14px' : '0 20px',
             background: 'white',
             color: 'black',
             borderRadius: '20px',
-            fontSize: '12px',
+            fontSize: isMobile ? '10px' : '12px',
             fontWeight: 800,
             display: 'flex',
             alignItems: 'center',
@@ -238,7 +226,7 @@ const Navbar = () => {
           </Link>
         ) : (
           <Link to="/profile" style={{ color: 'white' }}>
-            <User size={22} strokeWidth={2.5} />
+            <User size={isMobile ? 22 : 22} strokeWidth={2.5} />
           </Link>
         )}
       </div>

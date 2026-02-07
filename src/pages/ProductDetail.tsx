@@ -239,7 +239,7 @@ const ProductDetail = () => {
                 <div className="product-detail-container">
 
                     {/* Main Product Section */}
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '60px', alignItems: 'start' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 320px), 1fr))', gap: '40px', alignItems: 'start' }}>
 
                         {/* Gallery */}
                         <div className="gallery-section">
@@ -365,7 +365,14 @@ const ProductDetail = () => {
                                 {product.brand && <span style={{ color: '#94A3B8', fontSize: '13px', fontWeight: 600 }}>by {product.brand}</span>}
                             </div>
 
-                            <h1 style={{ fontSize: '40px', fontWeight: 900, color: '#0F172A', marginBottom: '12px', letterSpacing: '-0.02em', lineHeight: 1.1 }}>{product.name}</h1>
+                            <h1 className="product-title" style={{
+                                fontSize: 'clamp(24px, 5vw, 32px)',
+                                fontWeight: 900,
+                                color: '#0F172A',
+                                marginBottom: '12px',
+                                letterSpacing: '-0.02em',
+                                lineHeight: 1.1
+                            }}>{product.name}</h1>
 
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '24px' }}>
                                 <div style={{ display: 'flex', gap: '2px' }}>

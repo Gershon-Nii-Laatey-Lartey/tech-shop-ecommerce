@@ -35,6 +35,13 @@ const AdminCustomers = () => {
     const [loading, setLoading] = useState(true);
     const [searchParams] = useSearchParams();
     const [searchTerm, setSearchTerm] = useState(searchParams.get('q') || '');
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
 
 
@@ -59,21 +66,21 @@ const AdminCustomers = () => {
 
             @media (max-width: 1024px) {
                 .admin-customers-main {
-                    margin-left: 0;
-                    padding: 0 24px 40px 24px;
-                    margin-top: 60px;
+                    margin-left: 0 !important;
+                    padding: 80px 20px 40px 20px !important;
+                    margin-top: 0 !important;
                 }
             }
 
             @media (max-width: 768px) {
                 .admin-customers-main {
-                    padding: 0 20px 100px 20px;
-                    margin-top: 60px;
+                    padding: 80px 16px 100px 16px !important;
                 }
                 .customers-grid {
                     display: grid;
                     grid-template-columns: 1fr;
-                    gap: 12px;
+                    gap: 16px;
+                    width: 100%;
                 }
                 .customers-table-container {
                     display: none;
@@ -83,7 +90,7 @@ const AdminCustomers = () => {
                 }
                 .customers-header {
                     flex-direction: column;
-                    align-items: flex-start !important;
+                    align-items: stretch !important;
                     gap: 16px;
                 }
                 .search-container {
@@ -104,11 +111,24 @@ const AdminCustomers = () => {
                 gap: 12px;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                 transition: all 0.2s;
+                width: 100%;
+                box-sizing: border-box;
             }
             
             .customer-card-mobile:hover {
                 box-shadow: 0 4px 16px rgba(0,0,0,0.08);
                 transform: translateY(-2px);
+            }
+            @media (max-width: 600px) {
+                .customer-card-mobile {
+                    padding: 12px;
+                }
+                .customer-card-mobile p, 
+                .customer-card-mobile span,
+                .customer-card-mobile div {
+                    word-break: break-word;
+                    overflow-wrap: break-word;
+                }
             }
         `;
         document.head.appendChild(style);
@@ -192,18 +212,18 @@ const AdminCustomers = () => {
 
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC' }}>
+        <div style={{ display: isMobile ? 'block' : 'flex', minHeight: '100vh', background: '#F8FAFC', width: '100%' }}>
             <AdminSidebar activeTab="Customers" />
 
-            <main className="admin-customers-main" style={{ flex: 1 }}>
-                <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+            <main className="admin-customers-main" style={{ flex: 1, width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                <div style={{ maxWidth: '1200px', margin: isMobile ? '0' : '0 auto', width: '100%', boxSizing: 'border-box' }}>
                     <div className="customers-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '32px' }}>
                         <div>
                             <h1 style={{ fontSize: '28px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.03em' }}>Customers</h1>
                             <p className="hide-mobile" style={{ color: '#64748B', fontWeight: 600 }}>Manage your user base and view activity</p>
                         </div>
-                        <div className="search-container" style={{ position: 'relative' }}>
-                            <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} size={16} />
+                        <div className="search-container" style={{ position: 'relative', width: isMobile ? '100%' : 'auto' }}>
+                            <Search style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', zIndex: 1 }} size={16} />
                             <input
                                 type="text"
                                 placeholder="Search customers..."
@@ -214,7 +234,8 @@ const AdminCustomers = () => {
                                     borderRadius: '12px',
                                     border: '1px solid #E2E8F0',
                                     fontSize: '14px',
-                                    width: '300px',
+                                    width: '100%',
+                                    maxWidth: '300px',
                                     outline: 'none'
                                 }}
                             />
@@ -285,9 +306,9 @@ const AdminCustomers = () => {
                                                 <User size={24} color="#94A3B8" />
                                             )}
                                         </div>
-                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                            <p style={{ margin: 0, fontWeight: 800, color: '#0F172A', fontSize: '15px' }}>{customer.full_name || 'Unnamed'}</p>
-                                            <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{customer.email}</p>
+                                        <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                                            <p style={{ margin: 0, fontWeight: 800, color: '#0F172A', fontSize: '15px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{customer.full_name || 'Unnamed'}</p>
+                                            <p style={{ margin: '2px 0 0 0', fontSize: '13px', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{customer.email}</p>
                                         </div>
                                         <div style={{ position: 'relative' }}>
                                             <div style={{
@@ -324,16 +345,16 @@ const AdminCustomers = () => {
                                         </div>
                                     </div>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', padding: '12px 0', borderTop: '1px solid #F1F5F9', borderBottom: '1px solid #F1F5F9' }}>
-                                        <div>
+                                    <div style={{ display: 'flex', gap: '12px', padding: '12px 0', borderTop: '1px solid #F1F5F9', borderBottom: '1px solid #F1F5F9' }}>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
                                             <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>Total Spent</p>
-                                            <p style={{ margin: '4px 0 0 0', fontSize: '16px', fontWeight: 900, color: '#0F172A' }}>GH₵ {customer.stats.totalSpent.toFixed(2)}</p>
+                                            <p style={{ margin: '4px 0 0 0', fontSize: '15px', fontWeight: 900, color: '#0F172A' }}>GH₵ {customer.stats.totalSpent.toFixed(2)}</p>
                                         </div>
-                                        <div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
                                             <p style={{ margin: 0, fontSize: '11px', fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase' }}>Orders</p>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '4px' }}>
                                                 <ShoppingBag size={14} color="#5544ff" />
-                                                <p style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0F172A' }}>{customer.stats.totalOrders}</p>
+                                                <p style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>{customer.stats.totalOrders}</p>
                                             </div>
                                         </div>
                                     </div>

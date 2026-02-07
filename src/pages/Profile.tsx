@@ -472,12 +472,15 @@ const Profile = () => {
                     margin-bottom: 40px;
                     box-shadow: 0 4px 20px rgba(0,0,0,0.03);
                     border: 1px solid #f1f5f9;
+                    width: 100%;
                 }
 
                 .profile-info-section {
                     display: flex;
                     align-items: center;
                     gap: 24px;
+                    min-width: 0;
+                    flex: 1;
                 }
 
                 .profile-avatar-large {
@@ -511,6 +514,9 @@ const Profile = () => {
                     color: #0F172A;
                     letter-spacing: -0.04em;
                     margin-bottom: 4px;
+                    overflow: hidden;
+                    text-overflow: ellipsis;
+                    white-space: nowrap;
                 }
 
                 .email-meta {
@@ -521,6 +527,7 @@ const Profile = () => {
                     color: #64748B;
                     font-weight: 500;
                     margin-bottom: 12px;
+                    word-break: break-all;
                 }
 
                 .profile-badges {
@@ -1025,9 +1032,18 @@ const Profile = () => {
                         font-size: 22px;
                     }
                     .profile-info-section {
-                        gap: 16px;
+                        width: 100%;
                     }
-                    .sign-out-btn {
+                    .profile-text-details {
+                        min-width: 0;
+                        flex: 1;
+                    }
+                    .profile-actions {
+                        width: 100%;
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    .sign-out-btn, .admin-dashboard-btn {
                         width: 100%;
                         justify-content: center;
                     }

@@ -54,7 +54,7 @@ const HeroContent = () => {
     return (
         <div className="hero-wrapper" style={{
             position: 'relative',
-            overflow: 'visible', // Allow filters to show outside if needed, though they are fixed/absolute
+            overflow: 'hidden',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'space-between'
@@ -432,7 +432,7 @@ const HeroContent = () => {
                 @media (max-width: 768px) {
                     .hero-wrapper {
                         min-height: 250px !important;
-                        padding: 24px 16px 0px 16px !important;
+                        padding: 24px 20px 0px 20px !important;
                         justify-content: flex-start !important;
                         margin-bottom: 20px !important;
                         margin-top: 0 !important;
@@ -452,8 +452,8 @@ const HeroContent = () => {
                     .search-outer-container {
                         position: absolute !important;
                         bottom: -15px !important;
-                        left: 16px !important;
-                        right: 16px !important;
+                        left: 20px !important;
+                        right: 20px !important;
                         margin-top: 0 !important;
                     }
                     .hero-search-container {

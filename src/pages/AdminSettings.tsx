@@ -129,7 +129,12 @@ const AdminLogistics = () => {
             .delete()
             .eq('id', id);
 
-        if (!error) fetchZones(currentParentId);
+        if (error) {
+            console.error('Error deleting zone:', error);
+            alert('Could not delete location. It might be in use by existing customer addresses.');
+        } else {
+            fetchZones(currentParentId);
+        }
     };
 
     const navigateToZone = (zone: LogisticsZone) => {
@@ -160,42 +165,24 @@ const AdminLogistics = () => {
             <AdminSidebar activeTab="Settings" />
 
             <div className="admin-main-content">
-                <header style={{ marginBottom: '40px', marginTop: '40px' }}>
-                    <h1 style={{ fontSize: '32px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.04em', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <header className="admin-settings-header">
+                    <h1 style={{ fontWeight: 900, color: '#0F172A', letterSpacing: '-0.04em', display: 'flex', alignItems: 'center', gap: '12px' }}>
                         <Settings size={32} color="#5544ff" />
                         Shop Settings
                     </h1>
                     <p style={{ color: '#64748B', fontWeight: 600, marginTop: '8px' }}>Global logistics and distribution controls</p>
                 </header>
 
-                <div style={{ display: 'flex', gap: '32px', marginBottom: '32px', borderBottom: '1px solid #E2E8F0' }}>
+                <div className="settings-tabs-container">
                     <button
                         onClick={() => setActiveTab('configuration')}
-                        style={{
-                            padding: '16px 4px',
-                            background: 'none',
-                            border: 'none',
-                            fontWeight: 800,
-                            fontSize: '14px',
-                            color: activeTab === 'configuration' ? '#5544ff' : '#64748B',
-                            borderBottom: activeTab === 'configuration' ? '2px solid #5544ff' : '2px solid transparent',
-                            cursor: 'pointer'
-                        }}
+                        className={`settings-tab ${activeTab === 'configuration' ? 'active' : ''}`}
                     >
                         Integration Configuration
                     </button>
                     <button
                         onClick={() => setActiveTab('infrastructure')}
-                        style={{
-                            padding: '16px 4px',
-                            background: 'none',
-                            border: 'none',
-                            fontWeight: 800,
-                            fontSize: '14px',
-                            color: activeTab === 'infrastructure' ? '#5544ff' : '#64748B',
-                            borderBottom: activeTab === 'infrastructure' ? '2px solid #5544ff' : '2px solid transparent',
-                            cursor: 'pointer'
-                        }}
+                        className={`settings-tab ${activeTab === 'infrastructure' ? 'active' : ''}`}
                     >
                         Logistics Infrastructure
                     </button>
@@ -206,7 +193,7 @@ const AdminLogistics = () => {
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            style={{ background: '#fff', borderRadius: '24px', padding: '32px', border: '1px solid #E2E8F0', boxShadow: '0 4px 20px rgba(0,0,0,0.02)' }}
+                            className="settings-card"
                         >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '32px' }}>
                                 <div style={{ width: '48px', height: '48px', borderRadius: '14px', background: 'rgba(85, 68, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -301,18 +288,18 @@ const AdminLogistics = () => {
                             ))}
                         </div>
 
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-                            <div style={{ position: 'relative', width: '320px' }}>
+                        <div className="infrastructure-header">
+                            <div style={{ position: 'relative', flex: 1 }}>
                                 <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
                                 <input
                                     type="text"
                                     placeholder="Filter locations..."
-                                    style={{ width: '100%', padding: '12px 16px 12px 48px', background: '#fff', border: '1px solid #E2E8F0', borderRadius: '12px', fontSize: '14px', outline: 'none' }}
+                                    className="search-input"
                                 />
                             </div>
                             <button
                                 onClick={() => setIsAddModalOpen(true)}
-                                style={{ padding: '12px 24px', background: '#0F172A', color: '#fff', borderRadius: '12px', border: 'none', fontWeight: 800, fontSize: '14px', display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}
+                                className="add-location-btn"
                             >
                                 <Plus size={18} />
                                 New Location
@@ -406,7 +393,7 @@ const AdminLogistics = () => {
                             initial={{ opacity: 0, scale: 0.9, y: 20 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                            style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: '400px', background: '#fff', borderRadius: '32px', padding: '32px', zIndex: 1001, boxShadow: '0 20px 50px rgba(0,0,0,0.2)' }}
+                            className="settings-modal"
                         >
                             <h2 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '8px' }}>Add {path.length === 0 ? 'Major Zone' : 'Sub-Location'}</h2>
                             <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '24px' }}>
@@ -432,6 +419,100 @@ const AdminLogistics = () => {
             </AnimatePresence>
 
             <style>{`
+                .admin-main-content {
+                    margin-left: 260px;
+                    padding: 40px;
+                    transition: all 0.3s;
+                }
+
+                .admin-settings-header {
+                    margin-bottom: 40px;
+                    margin-top: 40px;
+                }
+
+                .admin-settings-header h1 {
+                    font-size: 32px;
+                }
+
+                .settings-tabs-container {
+                    display: flex;
+                    gap: 32px;
+                    border-bottom: 1px solid #E2E8F0;
+                    margin-bottom: 32px;
+                }
+
+                .settings-tab {
+                    padding: 16px 4px;
+                    background: none;
+                    border: none;
+                    font-weight: 800;
+                    font-size: 14px;
+                    color: #64748B;
+                    border-bottom: 2px solid transparent;
+                    cursor: pointer;
+                    white-space: nowrap;
+                }
+
+                .settings-tab.active {
+                    color: #5544ff;
+                    border-bottom: 2px solid #5544ff;
+                }
+
+                .settings-card {
+                    background: #fff;
+                    border-radius: 24px;
+                    padding: 32px;
+                    border: 1px solid #E2E8F0;
+                    box-shadow: 0 4px 20px rgba(0,0,0,0.02);
+                }
+
+                .infrastructure-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 24px;
+                    gap: 16px;
+                }
+
+                .search-input {
+                    width: 100%;
+                    padding: 12px 16px 12px 48px;
+                    background: #fff;
+                    border: 1px solid #E2E8F0;
+                    font-size: 14px;
+                    outline: none;
+                    border-radius: 12px;
+                }
+
+                .add-location-btn {
+                    padding: 12px 24px;
+                    background: #0F172A;
+                    color: #fff;
+                    border-radius: 12px;
+                    border: none;
+                    font-weight: 800;
+                    font-size: 14px;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                    cursor: pointer;
+                    white-space: nowrap;
+                }
+
+                .settings-modal {
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    width: 400px;
+                    max-width: 90%;
+                    background: #fff;
+                    border-radius: 32px;
+                    padding: 32px;
+                    z-index: 1001;
+                    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+                }
+
                 .switch {
                     position: relative;
                     display: inline-block;
@@ -472,8 +553,51 @@ const AdminLogistics = () => {
                     0% { transform: rotate(0deg); }
                     100% { transform: rotate(360deg); }
                 }
+
+                @media (max-width: 1024px) {
+                    .admin-main-content {
+                        margin-left: 0;
+                        padding: 0 24px 40px 24px;
+                        margin-top: 60px;
+                    }
+                    .admin-settings-header {
+                        margin-top: 32px;
+                    }
+                }
+
+                @media (max-width: 768px) {
+                    .admin-main-content {
+                        padding: 0 20px 40px 20px;
+                    }
+                    .admin-settings-header h1 {
+                        font-size: 24px;
+                    }
+                    .settings-tabs-container {
+                        gap: 16px;
+                        overflow-x: auto;
+                        padding-bottom: 4px;
+                        -webkit-overflow-scrolling: touch;
+                    }
+                    .settings-card {
+                        padding: 24px;
+                    }
+                    .infrastructure-header {
+                        flex-direction: column;
+                        align-items: stretch;
+                    }
+                    .infrastructure-header div {
+                        width: 100% !important;
+                    }
+                    .add-location-btn {
+                        width: 100%;
+                        justify-content: center;
+                    }
+                    .settings-modal {
+                        padding: 24px;
+                    }
+                }
             `}</style>
-        </div>
+        </div >
     );
 };
 

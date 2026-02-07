@@ -65,6 +65,13 @@ const AdminProducts = () => {
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [isImporting, setIsImporting] = useState(false);
     const [importProgress, setImportProgress] = useState({ current: 0, total: 0, status: '' });
+    const [isMobile, setIsMobile] = useState(window.innerWidth <= 1024);
+
+    useEffect(() => {
+        const handleResize = () => setIsMobile(window.innerWidth <= 1024);
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
 
     useEffect(() => {
         const style = document.createElement('style');
@@ -72,8 +79,9 @@ const AdminProducts = () => {
             @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
             
             .admin-main-content {
-                padding: 0 32px 40px 32px;
-                transition: padding 0.3s;
+                margin-left: 260px;
+                padding: 40px;
+                transition: all 0.3s;
             }
 
             .product-grid {
@@ -97,7 +105,8 @@ const AdminProducts = () => {
 
             @media (max-width: 1024px) {
                 .admin-main-content {
-                    padding: 0 24px 40px 24px;
+                    margin-left: 0 !important;
+                    padding: 80px 24px 40px 24px !important;
                 }
                 .product-grid {
                     grid-template-columns: repeat(3, 1fr) !important;
@@ -105,9 +114,13 @@ const AdminProducts = () => {
             }
 
             @media (max-width: 768px) {
+                .admin-products-root {
+                    display: block !important;
+                }
                 .admin-main-content {
-                    padding: 0 20px 100px 20px !important;
-                    margin-top: 60px !important;
+                    padding: 80px 16px 100px 16px !important;
+                    margin-top: 0 !important;
+                    margin-left: 0 !important;
                 }
                 .main-header-sticky {
                     top: 0 !important;
@@ -119,12 +132,12 @@ const AdminProducts = () => {
                     display: none !important;
                 }
                 .product-grid {
-                    display: grid !important; /* Ensure grid is shown on mobile */
-                    grid-template-columns: repeat(2, 1fr) !important; /* 2 columns on mobile */
+                    display: grid !important;
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                     gap: 12px !important;
                 }
                 .product-table-container {
-                    display: none !important; /* Hide table on mobile */
+                    display: none !important;
                 }
                 header {
                     padding: 12px 0 !important;
@@ -145,7 +158,7 @@ const AdminProducts = () => {
 
             @media (max-width: 480px) {
                 .product-grid {
-                    grid-template-columns: repeat(2, 1fr) !important;
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
                     gap: 10px !important;
                 }
             }
@@ -160,6 +173,8 @@ const AdminProducts = () => {
                 gap: 10px;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.04);
                 transition: all 0.2s;
+                width: 100% !important;
+                box-sizing: border-box !important;
             }
             
             .product-card-mobile:hover {
@@ -358,278 +373,292 @@ const AdminProducts = () => {
     );
 
     return (
-        <div style={{
-            display: 'flex',
+        <div className="admin-products-root" style={{
+            display: isMobile ? 'block' : 'flex',
             minHeight: '100vh',
             background: '#F8FAFC',
             fontFamily: FONT_FAMILY,
-            color: '#0f172a'
+            color: '#0f172a',
+            width: '100%'
         }}>
             <AdminSidebar activeTab="Products" />
 
-            <div className="admin-main-content" style={{ flex: 1, position: 'relative', width: '100%', overflowX: 'hidden' }}>
-                <header className="main-header-sticky" style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    padding: '24px 0',
-                    position: 'sticky',
-                    top: 0,
-                    background: '#F8FAFC',
-                    zIndex: 100,
-                    gap: '16px',
-                    marginRight: '-4px'
-                }}>
-                    <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
-                        <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
-                        <input
-                            type="search"
-                            placeholder="Search products..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '12px 16px 12px 48px',
-                                background: '#ffffff',
-                                border: '1.5px solid #F1F5F9',
-                                borderRadius: '14px',
-                                fontSize: '14px',
-                                outline: 'none',
-                                fontWeight: 600,
-                                color: '#0F172A',
-                                boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                            }}
-                        />
-                        {searchTerm && (
-                            <div style={{
-                                position: 'absolute',
-                                top: '100%',
-                                left: 0,
-                                right: 0,
-                                background: 'white',
-                                borderRadius: '12px',
-                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                                zIndex: 50,
-                                marginTop: '4px',
-                                border: '1px solid #E2E8F0',
-                                maxHeight: '300px',
-                                overflowY: 'auto'
-                            }}>
-                                {filteredProducts.slice(0, 5).map(product => (
-                                    <div
-                                        key={product.id}
-                                        onClick={() => {
-                                            setEditingProduct(product);
-                                            setSearchTerm('');
-                                        }}
-                                        style={{
-                                            padding: '12px 16px',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '12px',
-                                            cursor: 'pointer',
-                                            borderBottom: '1px solid #F1F5F9'
-                                        }}
-                                        onMouseEnter={(e) => e.currentTarget.style.background = '#F8FAFC'}
-                                        onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
-                                    >
-                                        <img src={product.image} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover' }} />
-                                        <div>
-                                            <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>{product.name}</div>
-                                            <div style={{ fontSize: '12px', color: '#64748B' }}>GH₵ {Number(product.price).toFixed(2)}</div>
+            <div className="admin-main-content" style={{ flex: 1, position: 'relative', width: '100%', minWidth: 0, boxSizing: 'border-box' }}>
+                <div style={{ maxWidth: '1200px', margin: isMobile ? '0' : '0 auto', width: '100%', boxSizing: 'border-box' }}>
+                    <header className="main-header-sticky" style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '24px 0',
+                        position: 'sticky',
+                        top: 0,
+                        background: '#F8FAFC',
+                        zIndex: 100,
+                        gap: '16px',
+                        width: '100%',
+                        boxSizing: 'border-box'
+                    }}>
+                        <div style={{ position: 'relative', flex: 1, maxWidth: '400px' }}>
+                            <Search size={18} color="#94A3B8" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)' }} />
+                            <input
+                                type="search"
+                                placeholder="Search products..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '12px 16px 12px 48px',
+                                    background: '#ffffff',
+                                    border: '1.5px solid #F1F5F9',
+                                    borderRadius: '14px',
+                                    fontSize: '14px',
+                                    outline: 'none',
+                                    fontWeight: 600,
+                                    color: '#0F172A',
+                                    boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                                }}
+                            />
+                            {searchTerm && (
+                                <div style={{
+                                    position: 'absolute',
+                                    top: '100%',
+                                    left: 0,
+                                    right: 0,
+                                    background: 'white',
+                                    borderRadius: '12px',
+                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                                    zIndex: 50,
+                                    marginTop: '4px',
+                                    border: '1px solid #E2E8F0',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto'
+                                }}>
+                                    {filteredProducts.slice(0, 5).map(product => (
+                                        <div
+                                            key={product.id}
+                                            onClick={() => {
+                                                setEditingProduct(product);
+                                                setSearchTerm('');
+                                            }}
+                                            style={{
+                                                padding: '12px 16px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '12px',
+                                                cursor: 'pointer',
+                                                borderBottom: '1px solid #F1F5F9'
+                                            }}
+                                            onMouseEnter={(e) => e.currentTarget.style.background = '#F8FAFC'}
+                                            onMouseLeave={(e) => e.currentTarget.style.background = 'white'}
+                                        >
+                                            <img src={product.image} style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover' }} />
+                                            <div>
+                                                <div style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A' }}>{product.name}</div>
+                                                <div style={{ fontSize: '12px', color: '#64748B' }}>GH₵ {Number(product.price).toFixed(2)}</div>
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
-                                {filteredProducts.length === 0 && (
-                                    <div style={{ padding: '12px 16px', color: '#64748B', fontSize: '14px' }}>No products found</div>
-                                )}
+                                    ))}
+                                    {filteredProducts.length === 0 && (
+                                        <div style={{ padding: '12px 16px', color: '#64748B', fontSize: '14px' }}>No products found</div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="action-buttons" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: '#5544ff',
+                                    color: 'white',
+                                    border: 'none',
+                                    padding: '12px',
+                                    borderRadius: '14px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    boxShadow: '0 4px 12px rgba(85, 68, 255, 0.2)'
+                                }}
+                            >
+                                <Plus size={20} />
+                                <span className="hide-mobile">Add Product</span>
+                            </button>
+
+                            <label
+                                style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '8px',
+                                    background: '#ffffff',
+                                    color: '#5544ff',
+                                    border: '1.5px solid #5544ff',
+                                    padding: '11px',
+                                    borderRadius: '14px',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                }}
+                            >
+                                <Upload size={19} />
+                                <span className="hide-mobile">{isImporting ? 'Importing...' : 'Import ZIP'}</span>
+                                <input type="file" hidden accept=".zip" onChange={handleImport} disabled={isImporting} />
+                            </label>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="hide-mobile">
+                                <img
+                                    src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
+                                    alt="avatar"
+                                    style={{ width: '38px', height: '38px', borderRadius: '12px', border: '2px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', objectFit: 'cover' }}
+                                />
                             </div>
+                        </div>
+                    </header>
+
+                    <div style={{ marginBottom: '32px' }}>
+                        <h2 className="page-title" style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.04em', color: '#0F172A' }}>Inventory <span style={{ color: '#94A3B8', fontWeight: 600 }}>({filteredProducts.length})</span></h2>
+                        <p style={{ color: '#64748B', fontSize: '15px', marginTop: '4px', fontWeight: 600 }} className="hide-mobile">Manage products, variants and media assets</p>
+                    </div>
+
+                    <div className="product-grid">
+                        {loading ? (
+                            <>
+                                {[1, 2, 3, 4].map(i => (
+                                    <div key={i} style={{ background: '#F8FAFC', borderRadius: '16px', height: '280px', animation: 'pulse 1.5s infinite' }} />
+                                ))}
+                            </>
+                        ) : filteredProducts.length === 0 ? (
+                            <div style={{ gridColumn: '1 / -1', padding: '100px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>No products found matching your search.</div>
+                        ) : (
+                            filteredProducts.map(p => (
+                                <div key={p.id} className="product-card-mobile">
+                                    <div style={{ width: '100%', aspectRatio: '1', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #F1F5F9', padding: '12px', position: 'relative', overflow: 'hidden' }}>
+                                        <img src={p.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt={p.name} />
+                                        {p.is_featured && (
+                                            <div style={{ position: 'absolute', top: '8px', right: '8px', background: '#FEF3C7', color: '#D97706', padding: '4px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <Tag size={10} /> Featured
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
+                                        <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.3, minHeight: '36px', wordBreak: 'break-word' }}>{p.name}</p>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
+                                            <span style={{
+                                                padding: '3px 8px',
+                                                background: '#F1F5F9',
+                                                borderRadius: '6px',
+                                                fontSize: '10px',
+                                                fontWeight: 800,
+                                                color: '#475569',
+                                                maxWidth: '80px',
+                                                whiteSpace: 'nowrap',
+                                                overflow: 'hidden',
+                                                textOverflow: 'ellipsis'
+                                            }}>
+                                                {p.category}
+                                            </span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: p.stock < 10 ? '#ef4444' : '#10b981' }}></div>
+                                                <span style={{ fontSize: '11px', fontWeight: 700, color: p.stock < 10 ? '#ef4444' : '#0F172A' }}>{p.stock}</span>
+                                            </div>
+                                        </div>
+                                        <p style={{ margin: '6px 0 0 0', fontSize: '16px', fontWeight: 900, color: '#5544ff' }}>GH₵ {Number(p.price).toFixed(2)}</p>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '6px', paddingTop: '8px', borderTop: '1px solid #F8FAFC' }}>
+                                        <button
+                                            onClick={() => setEditingProduct(p)}
+                                            style={{ flex: 1, padding: '8px 4px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontWeight: 700, fontSize: '11px', minWidth: 0 }}
+                                        >
+                                            <Edit size={12} /> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Edit</span>
+                                        </button>
+                                        <button onClick={() => handleDelete(p.id)} style={{ flex: 1, padding: '8px 4px', background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '10px', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px', fontWeight: 700, fontSize: '11px', minWidth: 0 }}>
+                                            <Trash2 size={12} /> <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Delete</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            ))
                         )}
                     </div>
 
-                    <div className="action-buttons" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <button
-                            onClick={() => setShowAddModal(true)}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                background: '#5544ff',
-                                color: 'white',
-                                border: 'none',
-                                padding: '12px',
-                                borderRadius: '14px',
-                                fontWeight: 700,
-                                cursor: 'pointer',
-                                boxShadow: '0 4px 12px rgba(85, 68, 255, 0.2)'
-                            }}
-                        >
-                            <Plus size={20} />
-                            <span className="hide-mobile">Add Product</span>
-                        </button>
-
-                        <label
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '8px',
-                                background: '#ffffff',
-                                color: '#5544ff',
-                                border: '1.5px solid #5544ff',
-                                padding: '11px',
-                                borderRadius: '14px',
-                                fontWeight: 700,
-                                cursor: 'pointer'
-                            }}
-                        >
-                            <Upload size={19} />
-                            <span className="hide-mobile">{isImporting ? 'Importing...' : 'Import ZIP'}</span>
-                            <input type="file" hidden accept=".zip" onChange={handleImport} disabled={isImporting} />
-                        </label>
-
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }} className="hide-mobile">
-                            <img
-                                src={profile?.avatar_url || `https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.email}`}
-                                alt="avatar"
-                                style={{ width: '38px', height: '38px', borderRadius: '12px', border: '2px solid white', boxShadow: '0 4px 10px rgba(0,0,0,0.05)', objectFit: 'cover' }}
-                            />
-                        </div>
+                    <div className="product-table-container" style={{ background: '#ffffff', borderRadius: '24px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
+                        <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse' }}>
+                            <thead>
+                                <tr style={{ borderBottom: '1px solid #F1F5F9', background: '#FAFBFC' }}>
+                                    <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
+                                    <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Category</th>
+                                    <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</th>
+                                    <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</th>
+                                    <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
+                                    <th style={{ textAlign: 'right', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={6} style={{ padding: '100px', textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                                                <Upload className="animate-pulse" size={40} color="#cbd5e1" />
+                                                <p style={{ color: '#64748b', fontWeight: 600 }}>Loading inventory...</p>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ) : filteredProducts.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={6} style={{ padding: '100px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>No products found matching your search.</td>
+                                    </tr>
+                                ) : filteredProducts.map(p => (
+                                    <tr key={p.id} className="table-row-hover" style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.2s' }}>
+                                        <td style={{ padding: '16px 24px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                                                <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: '#F8FAFC', padding: '4px', border: '1px solid #F1F5F9' }}>
+                                                    <img src={p.image} style={{ width: '100%', height: '100%', borderRadius: '10px', objectFit: 'contain' }} />
+                                                </div>
+                                                <div>
+                                                    <p style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>{p.name}</p>
+                                                    <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace' }}>{p.sku || p.id.slice(0, 8)}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 24px' }}>
+                                            <span style={{ padding: '6px 12px', background: '#F1F5F9', borderRadius: '10px', fontSize: '12px', fontWeight: 800, color: '#475569' }}>
+                                                {p.category}
+                                            </span>
+                                        </td>
+                                        <td style={{ padding: '16px 24px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                <span style={{ fontSize: '15px', fontWeight: 900, color: '#0f172a' }}>GH₵ {Number(p.price).toFixed(2)}</span>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 24px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: p.stock < 10 ? '#ef4444' : '#10b981' }}></div>
+                                                <span style={{ fontSize: '14px', fontWeight: 700, color: p.stock < 10 ? '#ef4444' : '#0f172a' }}>
+                                                    {p.stock}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td style={{ padding: '16px 24px' }}>
+                                            {p.is_featured ? (
+                                                <span style={{ padding: '6px 12px', background: '#FEF3C7', color: '#D97706', borderRadius: '10px', fontSize: '12px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                                    <Tag size={12} /> Featured
+                                                </span>
+                                            ) : (
+                                                <span style={{ padding: '6px 12px', background: '#F8FAFC', color: '#94a3b8', borderRadius: '10px', fontSize: '12px', fontWeight: 800 }}>Standard</span>
+                                            )}
+                                        </td>
+                                        <td style={{ padding: '16px 24px', textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
+                                                <button onClick={() => setEditingProduct(p)} style={{ padding: '10px', background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '12px', cursor: 'pointer', color: '#64748b', transition: 'all 0.2s' }}><Edit size={18} /></button>
+                                                <button onClick={() => handleDelete(p.id)} style={{ padding: '10px', background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '12px', cursor: 'pointer', color: '#ef4444', transition: 'all 0.2s' }}><Trash2 size={18} /></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
                     </div>
-                </header>
 
-                <div style={{ marginBottom: '32px' }}>
-                    <h2 className="page-title" style={{ fontSize: '32px', fontWeight: 900, letterSpacing: '-0.04em', color: '#0F172A' }}>Inventory <span style={{ color: '#94A3B8', fontWeight: 600 }}>({filteredProducts.length})</span></h2>
-                    <p style={{ color: '#64748B', fontSize: '15px', marginTop: '4px', fontWeight: 600 }} className="hide-mobile">Manage products, variants and media assets</p>
-                </div>
-
-                <div className="product-grid">
-                    {loading ? (
-                        <>
-                            {[1, 2, 3, 4].map(i => (
-                                <div key={i} style={{ background: '#F8FAFC', borderRadius: '16px', height: '280px', animation: 'pulse 1.5s infinite' }} />
-                            ))}
-                        </>
-                    ) : filteredProducts.length === 0 ? (
-                        <div style={{ gridColumn: '1 / -1', padding: '100px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>No products found matching your search.</div>
-                    ) : (
-                        filteredProducts.map(p => (
-                            <div key={p.id} className="product-card-mobile">
-                                <div style={{ width: '100%', aspectRatio: '1', background: '#F8FAFC', borderRadius: '12px', border: '1px solid #F1F5F9', padding: '12px', position: 'relative', overflow: 'hidden' }}>
-                                    <img src={p.image} style={{ width: '100%', height: '100%', objectFit: 'contain' }} alt={p.name} />
-                                    {p.is_featured && (
-                                        <div style={{ position: 'absolute', top: '8px', right: '8px', background: '#FEF3C7', color: '#D97706', padding: '4px 8px', borderRadius: '8px', fontSize: '10px', fontWeight: 800, display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <Tag size={10} /> Featured
-                                        </div>
-                                    )}
-                                </div>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: '#0F172A', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', lineHeight: 1.3, minHeight: '36px' }}>{p.name}</p>
-                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
-                                        <span style={{ padding: '4px 10px', background: '#F1F5F9', borderRadius: '8px', fontSize: '11px', fontWeight: 800, color: '#475569' }}>
-                                            {p.category}
-                                        </span>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: p.stock < 10 ? '#ef4444' : '#10b981' }}></div>
-                                            <span style={{ fontSize: '11px', fontWeight: 700, color: p.stock < 10 ? '#ef4444' : '#0F172A' }}>{p.stock}</span>
-                                        </div>
-                                    </div>
-                                    <p style={{ margin: '8px 0 0 0', fontSize: '18px', fontWeight: 900, color: '#5544ff' }}>GH₵ {Number(p.price).toFixed(2)}</p>
-                                </div>
-                                <div style={{ display: 'flex', gap: '8px', paddingTop: '8px', borderTop: '1px solid #F8FAFC' }}>
-                                    <button
-                                        onClick={() => setEditingProduct(p)}
-                                        style={{ flex: 1, padding: '10px', background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '10px', color: '#64748B', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, fontSize: '12px' }}
-                                    >
-                                        <Edit size={14} /> Edit
-                                    </button>
-                                    <button onClick={() => handleDelete(p.id)} style={{ flex: 1, padding: '10px', background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '10px', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', fontWeight: 700, fontSize: '12px' }}>
-                                        <Trash2 size={14} /> Delete
-                                    </button>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
-
-                <div className="product-table-container" style={{ background: '#ffffff', borderRadius: '24px', border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.03)' }}>
-                    <table style={{ width: '100%', minWidth: '900px', borderCollapse: 'collapse' }}>
-                        <thead>
-                            <tr style={{ borderBottom: '1px solid #F1F5F9', background: '#FAFBFC' }}>
-                                <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Product</th>
-                                <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Category</th>
-                                <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Price</th>
-                                <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Stock</th>
-                                <th style={{ textAlign: 'left', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Status</th>
-                                <th style={{ textAlign: 'right', padding: '20px 24px', fontSize: '12px', color: '#64748b', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {loading ? (
-                                <tr>
-                                    <td colSpan={6} style={{ padding: '100px', textAlign: 'center' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
-                                            <Upload className="animate-pulse" size={40} color="#cbd5e1" />
-                                            <p style={{ color: '#64748b', fontWeight: 600 }}>Loading inventory...</p>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : filteredProducts.length === 0 ? (
-                                <tr>
-                                    <td colSpan={6} style={{ padding: '100px', textAlign: 'center', color: '#64748b', fontWeight: 600 }}>No products found matching your search.</td>
-                                </tr>
-                            ) : filteredProducts.map(p => (
-                                <tr key={p.id} className="table-row-hover" style={{ borderBottom: '1px solid #F1F5F9', transition: 'background 0.2s' }}>
-                                    <td style={{ padding: '16px 24px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-                                            <div style={{ width: '56px', height: '56px', borderRadius: '14px', background: '#F8FAFC', padding: '4px', border: '1px solid #F1F5F9' }}>
-                                                <img src={p.image} style={{ width: '100%', height: '100%', borderRadius: '10px', objectFit: 'contain' }} />
-                                            </div>
-                                            <div>
-                                                <p style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>{p.name}</p>
-                                                <p style={{ fontSize: '12px', color: '#94a3b8', fontWeight: 600, fontFamily: 'monospace' }}>{p.sku || p.id.slice(0, 8)}</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '16px 24px' }}>
-                                        <span style={{ padding: '6px 12px', background: '#F1F5F9', borderRadius: '10px', fontSize: '12px', fontWeight: 800, color: '#475569' }}>
-                                            {p.category}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '16px 24px' }}>
-                                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                            <span style={{ fontSize: '15px', fontWeight: 900, color: '#0f172a' }}>GH₵ {Number(p.price).toFixed(2)}</span>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '16px 24px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: p.stock < 10 ? '#ef4444' : '#10b981' }}></div>
-                                            <span style={{ fontSize: '14px', fontWeight: 700, color: p.stock < 10 ? '#ef4444' : '#0f172a' }}>
-                                                {p.stock}
-                                            </span>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '16px 24px' }}>
-                                        {p.is_featured ? (
-                                            <span style={{ padding: '6px 12px', background: '#FEF3C7', color: '#D97706', borderRadius: '10px', fontSize: '12px', fontWeight: 800, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
-                                                <Tag size={12} /> Featured
-                                            </span>
-                                        ) : (
-                                            <span style={{ padding: '6px 12px', background: '#F8FAFC', color: '#94a3b8', borderRadius: '10px', fontSize: '12px', fontWeight: 800 }}>Standard</span>
-                                        )}
-                                    </td>
-                                    <td style={{ padding: '16px 24px', textAlign: 'right' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                                            <button onClick={() => setEditingProduct(p)} style={{ padding: '10px', background: '#ffffff', border: '1px solid #E2E8F0', borderRadius: '12px', cursor: 'pointer', color: '#64748b', transition: 'all 0.2s' }}><Edit size={18} /></button>
-                                            <button onClick={() => handleDelete(p.id)} style={{ padding: '10px', background: '#FEF2F2', border: '1px solid #FEE2E2', borderRadius: '12px', cursor: 'pointer', color: '#ef4444', transition: 'all 0.2s' }}><Trash2 size={18} /></button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-
-                <style>{`
+                    <style>{`
                     .table-row-hover:hover {
                         background: #F8FAFC;
                     }
@@ -641,71 +670,72 @@ const AdminProducts = () => {
                         50% { opacity: .5; }
                     }
                 `}</style>
-            </div>
+                </div>
 
-            <AnimatePresence>
-                {showAddModal && <AddProductModal onClose={() => setShowAddModal(false)} onRefresh={fetchProducts} />}
-            </AnimatePresence>
+                <AnimatePresence>
+                    {showAddModal && <AddProductModal onClose={() => setShowAddModal(false)} onRefresh={fetchProducts} />}
+                </AnimatePresence>
 
-            <AnimatePresence>
-                {editingProduct && <EditProductModal product={editingProduct} onClose={() => setEditingProduct(null)} onRefresh={fetchProducts} />}
-            </AnimatePresence>
+                <AnimatePresence>
+                    {editingProduct && <EditProductModal product={editingProduct} onClose={() => setEditingProduct(null)} onRefresh={fetchProducts} />}
+                </AnimatePresence>
 
-            <AnimatePresence>
-                {isImporting && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        style={{
-                            position: 'fixed',
-                            inset: 0,
-                            background: 'rgba(15, 23, 42, 0.6)',
-                            backdropFilter: 'blur(8px)',
-                            zIndex: 10000,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}
-                    >
+                <AnimatePresence>
+                    {isImporting && (
                         <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
                             style={{
-                                background: 'white',
-                                padding: '40px',
-                                borderRadius: '32px',
-                                width: '400px',
-                                textAlign: 'center',
-                                boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                                position: 'fixed',
+                                inset: 0,
+                                background: 'rgba(15, 23, 42, 0.6)',
+                                backdropFilter: 'blur(8px)',
+                                zIndex: 10000,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
                             }}
                         >
-                            <div style={{ marginBottom: '24px' }}>
-                                <Upload size={48} className="animate-bounce" color="#5544ff" />
-                            </div>
-                            <h3 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '8px' }}>Importing Products</h3>
-                            <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>Please wait while we process your ZIP file.</p>
+                            <motion.div
+                                initial={{ scale: 0.9, y: 20 }}
+                                animate={{ scale: 1, y: 0 }}
+                                style={{
+                                    background: 'white',
+                                    padding: '40px',
+                                    borderRadius: '32px',
+                                    width: '400px',
+                                    textAlign: 'center',
+                                    boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)'
+                                }}
+                            >
+                                <div style={{ marginBottom: '24px' }}>
+                                    <Upload size={48} className="animate-bounce" color="#5544ff" />
+                                </div>
+                                <h3 style={{ fontSize: '20px', fontWeight: 900, marginBottom: '8px' }}>Importing Products</h3>
+                                <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>Please wait while we process your ZIP file.</p>
 
-                            <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase' }}>
-                                <span>Item {importProgress.current} profile of {importProgress.total}</span>
-                                <span>{Math.round((importProgress.current / importProgress.total) * 100) || 0}%</span>
-                            </div>
+                                <div style={{ marginBottom: '12px', display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase' }}>
+                                    <span>Item {importProgress.current} profile of {importProgress.total}</span>
+                                    <span>{Math.round((importProgress.current / importProgress.total) * 100) || 0}%</span>
+                                </div>
 
-                            <div style={{ height: '8px', background: '#F1F5F9', borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
-                                <motion.div
-                                    initial={{ width: 0 }}
-                                    animate={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
-                                    style={{ height: '100%', background: '#5544ff', borderRadius: '4px' }}
-                                />
-                            </div>
+                                <div style={{ height: '8px', background: '#F1F5F9', borderRadius: '4px', overflow: 'hidden', marginBottom: '16px' }}>
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${(importProgress.current / importProgress.total) * 100}%` }}
+                                        style={{ height: '100%', background: '#5544ff', borderRadius: '4px' }}
+                                    />
+                                </div>
 
-                            <p style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600, fontStyle: 'italic' }}>
-                                {importProgress.status}
-                            </p>
+                                <p style={{ color: '#94a3b8', fontSize: '12px', fontWeight: 600, fontStyle: 'italic' }}>
+                                    {importProgress.status}
+                                </p>
+                            </motion.div>
                         </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                    )}
+                </AnimatePresence>
+            </div>
         </div>
     );
 };
